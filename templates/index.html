@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>SSH Web Terminal</title>
+
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css"
+    >
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js">
+    </script>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+
+            margin: 0;
+
+            min-height: 100vh;
+
+            background: #0f172a;
+
+            color: white;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+        }
+
+        #login {
+
+            width: 420px;
+
+            max-width: 90%;
+
+            margin: 80px auto;
+
+            padding: 30px;
+
+            background: #1e293b;
+
+            border: 1px solid #334155;
+
+            border-radius: 12px;
+
+            box-shadow:
+                0 20px 50px
+                rgba(0, 0, 0, 0.4);
+
+        }
+
+        h2 {
+
+            text-align: center;
+
+            margin-top: 0;
+
+            margin-bottom: 25px;
+
+        }
+
+        .field {
+
+            margin-bottom: 15px;
+
+        }
+
+        label {
+
+            display: block;
+
+            margin-bottom: 6px;
+
+            font-size: 14px;
+
+            color: #cbd5e1;
+
+        }
+
+        input {
+
+            width: 100%;
+
+            padding: 12px;
+
+            border: 1px solid #475569;
+
+            border-radius: 7px;
+
+            background: #0f172a;
+
+            color: white;
+
+            outline: none;
+
+            font-size: 14px;
+
+        }
+
+        input:focus {
+
+            border-color: #3b82f6;
+
+        }
+
+        button {
+
+            width: 100%;
+
+            padding: 13px;
+
+            border: 0;
+
+            border-radius: 7px;
+
+            background: #2563eb;
+
+            color: white;
+
+            font-size: 15px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+        }
+
+        button:hover {
+
+            background: #1d4ed8;
+
+        }
+
+        #terminal {
+
+            display: none;
+
+            width: 100vw;
+
+            height: 100vh;
+
+            padding: 10px;
+
+            background: #000;
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div id="login">
+
+    <h2>SSH Web Terminal</h2>
+
+
+    <div class="field">
+
+        <label>SSH Host / IP</label>
+
+        <input
+            id="host"
+            type="text"
+            placeholder="192.168.1.100"
+        >
+
+    </div>
+
+
+    <div class="field">
+
+        <label>SSH Port</label>
+
+        <input
+            id="port"
+            type="number"
+            value="22"
+            placeholder="22"
+        >
+
+    </div>
+
+
+    <div class="field">
+
+        <label>Username</label>
+
+        <input
+            id="username"
+            type="text"
+            placeholder="ubuntu"
+        >
+
+    </div>
+
+
+    <div class="field">
+
+        <label>Password</label>
+
+        <input
+            id="password"
+            type="password"
+            placeholder="Password"
+        >
+
+    </div>
+
+
+    <button onclick="connect()">
+
+        Connect to SSH
+
+    </button>
+
+</div>
+
+
+<div id="terminal"></div>
+
+
+<script src="/static/terminal.js"></script>
+
+
+</body>
+
+</html>

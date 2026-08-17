@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: byolabs-backend-sa
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: byolabs-lab-manager-role
+rules:
+  # Namespaces management for user labs
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["create", "get", "list", "watch", "delete"]
+
+  # Pods, Services, ResourceQuotas management within lab namespaces
+  - apiGroups: [""]
+    resources: ["pods", "pods/exec", "pods/log", "services", "resourcequotas", "limitranges", "configmaps"]
+    verbs: ["create", "get", "list", "watch", "update", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: byolabs-backend-binding
+subjects:
+  - kind: ServiceAccount
+    name: byolabs-backend-sa
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: byolabs-lab-manager-role
+  apiGroup: rbac.authorization.k8s.io

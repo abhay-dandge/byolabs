@@ -1,0 +1,291 @@
+{
+  "users": [
+    {
+      "id": "usr-admin-001",
+      "name": "BYOLabs Administrator",
+      "email": "admin@byolabs.in",
+      "username": "admin",
+      "role": "ADMIN",
+      "status": "APPROVED",
+      "createdAt": "2026-08-17T06:35:58.648Z",
+      "updatedAt": "2026-08-17T06:35:58.649Z"
+    },
+    {
+      "id": "usr-07a17591",
+      "name": "Abhay",
+      "email": "abhay.d.patil96@gmail.com",
+      "username": "abhay",
+      "role": "USER",
+      "status": "APPROVED",
+      "createdAt": "2026-08-17T06:40:09.781Z",
+      "updatedAt": "2026-08-17T06:41:36.166Z"
+    }
+  ],
+  "passwords": {
+    "usr-admin-001": "$2a$10$Q4QtqFRMie70Q4TL2lVv8OmZbQBTGx8aarEES4D8tg2FDsXAQcXcy",
+    "usr-07a17591": "$2a$10$jE74kWbfTDrYz8h9iJ9WouW3jSvOUhylK1sxhBMh6qFG9nyt6cuta"
+  },
+  "labs": [
+    {
+      "id": "lab-ubuntu-playground",
+      "slug": "ubuntu-playground",
+      "name": "Ubuntu Playground",
+      "description": "Full interactive Ubuntu 24.04 LTS sandbox container equipped with bash, curl, wget, git, iproute2, vim, nano, and python.",
+      "category": "Linux",
+      "difficulty": "Beginner",
+      "durationMinutes": 60,
+      "dockerImage": "ubuntu:24.04",
+      "cpuRequest": "250m",
+      "cpuLimit": "1",
+      "memoryRequest": "256Mi",
+      "memoryLimit": "1Gi",
+      "storage": "1Gi",
+      "startupCommand": "/bin/bash",
+      "terminalEnabled": true,
+      "browserAccess": true,
+      "isPublished": true,
+      "createdAt": "2026-08-17T06:35:58.649Z",
+      "updatedAt": "2026-08-17T06:35:58.649Z",
+      "instructionsMarkdown": "\n# Ubuntu 24.04 Playground\n\nWelcome to your isolated **Ubuntu 24.04** container environment running as a Kubernetes pod.\n\n## Prerequisites & Tools\nThis container comes pre-configured with:\n- `bash`\n- `curl`, `wget`, `git`\n- `iproute2` (`ip a`, `ip route`), `net-tools`\n- `procps` (`ps aux`, `top`)\n- `vim`, `nano`\n\n---\n\n## Guided Exercises\n\n### Step 1: Inspect System Release & Kernel\nRun the following command in the interactive terminal on the right to view your OS version:\n\n```bash\ncat /etc/os-release\nuname -a\n```\n\n### Step 2: Working Directory & Environment Variables\nCheck your current working directory and active shell environment:\n\n```bash\npwd\nwhoami\nenv | grep USER\n```\n\n### Step 3: Create a DevOps Workspace Directory\nCreate a directory named `devops` in your home directory:\n\n```bash\nmkdir -p ~/devops && cd ~/devops\npwd\n```\n\n---\n\n## Tasks Checklist\n      ",
+      "tasks": [
+        {
+          "id": "task-1",
+          "title": "Check Ubuntu OS Version",
+          "description": "Execute `cat /etc/os-release` in the terminal to verify the container image.",
+          "validationScript": "grep -i \"ubuntu\" /etc/os-release"
+        },
+        {
+          "id": "task-2",
+          "title": "Create ~/devops Directory",
+          "description": "Create a directory named `devops` inside your home directory.",
+          "validationScript": "test -d ~/devops || test -d /root/devops"
+        },
+        {
+          "id": "task-3",
+          "title": "Create hello.txt file",
+          "description": "Write \"Welcome to BYOLabs\" into a file named `hello.txt` inside ~/devops.",
+          "validationScript": "grep -i \"Welcome to BYOLabs\" ~/devops/hello.txt || grep -i \"Welcome to BYOLabs\" /root/devops/hello.txt"
+        }
+      ]
+    },
+    {
+      "id": "lab-linux-fundamentals",
+      "slug": "linux-fundamentals",
+      "name": "Linux Fundamentals & File Permissions",
+      "description": "Master core Linux shell navigation, file manipulation, file permissions (chmod, chown), and process management.",
+      "category": "Linux",
+      "difficulty": "Beginner",
+      "durationMinutes": 45,
+      "dockerImage": "debian:12",
+      "cpuRequest": "250m",
+      "cpuLimit": "1",
+      "memoryRequest": "256Mi",
+      "memoryLimit": "512Mi",
+      "startupCommand": "/bin/bash",
+      "terminalEnabled": true,
+      "browserAccess": true,
+      "isPublished": true,
+      "createdAt": "2026-08-17T06:35:58.649Z",
+      "updatedAt": "2026-08-17T06:35:58.649Z",
+      "instructionsMarkdown": "\n# Linux Fundamentals & File System Permissions\n\nLearn essential file ownership and permission control in Linux environments.\n\n## Quick Commands\n- `chmod 755 filename`\n- `chown user:group filename`\n- `ls -la`\n\n```bash\ntouch sample.sh\nchmod +x sample.sh\n./sample.sh\n```\n      ",
+      "tasks": [
+        {
+          "id": "task-permissions",
+          "title": "Make Script Executable",
+          "description": "Create a script `/tmp/run.sh` and make it executable with `chmod +x /tmp/run.sh`.",
+          "validationScript": "test -x /tmp/run.sh"
+        }
+      ]
+    },
+    {
+      "id": "lab-docker-fundamentals",
+      "slug": "docker-fundamentals",
+      "name": "Docker Fundamentals & Containers",
+      "description": "Learn container mechanics, image inspection, container lifecycle management, port mapping, and volume persistence.",
+      "category": "Docker",
+      "difficulty": "Intermediate",
+      "durationMinutes": 60,
+      "dockerImage": "alpine:latest",
+      "cpuRequest": "500m",
+      "cpuLimit": "1",
+      "memoryRequest": "512Mi",
+      "memoryLimit": "1Gi",
+      "startupCommand": "/bin/sh",
+      "terminalEnabled": true,
+      "browserAccess": true,
+      "isPublished": true,
+      "createdAt": "2026-08-17T06:35:58.649Z",
+      "updatedAt": "2026-08-17T06:35:58.649Z",
+      "instructionsMarkdown": "\n# Docker Fundamentals\n\nExplore container primitives and image inspection in an isolated container sandbox.\n\n```bash\nuname -a\necho \"Testing Docker environment...\"\n```\n      ",
+      "tasks": [
+        {
+          "id": "task-docker-1",
+          "title": "Verify Alpine Environment",
+          "description": "Verify your Alpine container container environment with `cat /etc/alpine-release`.",
+          "validationScript": "test -f /etc/alpine-release"
+        }
+      ]
+    },
+    {
+      "id": "lab-kubernetes-basics",
+      "slug": "kubernetes-basics",
+      "name": "Kubernetes Pods & Workload Basics",
+      "description": "Learn Kubernetes concepts, pod specifications, deployments, namespaces, and YAML manifests.",
+      "category": "Kubernetes",
+      "difficulty": "Intermediate",
+      "durationMinutes": 60,
+      "dockerImage": "ubuntu:24.04",
+      "cpuRequest": "500m",
+      "cpuLimit": "1",
+      "memoryRequest": "512Mi",
+      "memoryLimit": "1Gi",
+      "startupCommand": "/bin/bash",
+      "terminalEnabled": true,
+      "browserAccess": true,
+      "isPublished": true,
+      "createdAt": "2026-08-17T06:35:58.649Z",
+      "updatedAt": "2026-08-17T06:35:58.649Z",
+      "instructionsMarkdown": "\n# Kubernetes Basics & Workloads\n\nLearn how Kubernetes manifests configure Pod specs and deployments.\n\n```bash\ncat << 'EOF' > pod.yaml\napiVersion: v1\nkind: Pod\nmetadata:\n  name: nginx-pod\nspec:\n  containers:\n  - name: nginx\n    image: nginx:alpine\nEOF\ncat pod.yaml\n```\n      ",
+      "tasks": [
+        {
+          "id": "task-k8s-1",
+          "title": "Create Pod Manifest",
+          "description": "Create a file named `pod.yaml` containing a valid Kubernetes Pod specification.",
+          "validationScript": "grep -i \"kind: Pod\" pod.yaml || grep -i \"kind: Pod\" ~/pod.yaml"
+        }
+      ]
+    },
+    {
+      "id": "lab-git-playground",
+      "slug": "git-playground",
+      "name": "Git Version Control & Branching",
+      "description": "Practice git initialization, commits, branching strategies, merge conflict resolution, and rebase operations.",
+      "category": "Git",
+      "difficulty": "Beginner",
+      "durationMinutes": 45,
+      "dockerImage": "ubuntu:24.04",
+      "cpuRequest": "250m",
+      "cpuLimit": "1",
+      "memoryRequest": "256Mi",
+      "memoryLimit": "512Mi",
+      "startupCommand": "/bin/bash",
+      "terminalEnabled": true,
+      "browserAccess": true,
+      "isPublished": true,
+      "createdAt": "2026-08-17T06:35:58.649Z",
+      "updatedAt": "2026-08-17T06:35:58.649Z",
+      "instructionsMarkdown": "\n# Git Branching & Version Control\n\nPractice initializing repositories and managing branches.\n\n```bash\nmkdir my-repo && cd my-repo\ngit init\ngit config user.name \"Student\"\ngit config user.email \"student@byolabs.in\"\necho \"Initial commit\" > README.md\ngit add .\ngit commit -m \"Initial commit\"\n```\n      ",
+      "tasks": [
+        {
+          "id": "task-git-1",
+          "title": "Initialize Git Repo",
+          "description": "Initialize a git repository in a directory named `my-repo` and create a initial commit.",
+          "validationScript": "test -d my-repo/.git || test -d ~/my-repo/.git"
+        }
+      ]
+    }
+  ],
+  "sessions": [
+    {
+      "id": "lab-03b2b787",
+      "userId": "usr-admin-001",
+      "labId": "lab-ubuntu-playground",
+      "labName": "Ubuntu Playground",
+      "labSlug": "ubuntu-playground",
+      "namespace": "lab-session-03b2b787",
+      "podName": "pod-ubuntu-playground-03b2b787",
+      "status": "EXPIRED",
+      "createdAt": "2026-08-17T06:42:20.879Z",
+      "startedAt": "2026-08-17T06:42:20.879Z",
+      "expiresAt": "2026-08-17T07:42:20.879Z",
+      "lastActivityAt": "2026-08-17T06:42:22.492Z",
+      "completedTasks": [],
+      "errorMessage": "Idle timeout exceeded (No terminal activity)"
+    }
+  ],
+  "logs": [
+    {
+      "id": "log-1786950749197-qfh7",
+      "timestamp": "2026-08-17T07:12:29.197Z",
+      "level": "info",
+      "source": "Provisioner",
+      "message": "Tearing down lab resources for session lab-03b2b787"
+    },
+    {
+      "id": "log-1786950749192-otnh",
+      "timestamp": "2026-08-17T07:12:29.192Z",
+      "level": "info",
+      "source": "CleanupWorker",
+      "message": "Expiring session lab-03b2b787: Idle timeout exceeded (No terminal activity)"
+    },
+    {
+      "id": "log-1786948942491-mcl4",
+      "timestamp": "2026-08-17T06:42:22.491Z",
+      "level": "info",
+      "source": "TerminalGateway",
+      "message": "User usr-admin-001 connected to session lab-03b2b787"
+    },
+    {
+      "id": "log-1786948942453-uzmh",
+      "timestamp": "2026-08-17T06:42:22.453Z",
+      "level": "info",
+      "source": "TerminalGateway",
+      "message": "User usr-admin-001 connected to session lab-03b2b787"
+    },
+    {
+      "id": "log-1786948942393-ayxg",
+      "timestamp": "2026-08-17T06:42:22.393Z",
+      "level": "info",
+      "source": "Provisioner",
+      "message": "Sandbox session lab-03b2b787 initialized for lab Ubuntu Playground"
+    },
+    {
+      "id": "log-1786948940880-fgqi",
+      "timestamp": "2026-08-17T06:42:20.880Z",
+      "level": "info",
+      "source": "Provisioner",
+      "message": "Starting provisioning for session lab-03b2b787 (Ubuntu Playground)"
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "audit-1786948940879-ln5v",
+      "userId": "usr-admin-001",
+      "userEmail": "admin@byolabs.in",
+      "action": "Start Lab",
+      "details": "Started lab Ubuntu Playground (Session: lab-03b2b787)",
+      "timestamp": "2026-08-17T06:42:20.879Z"
+    },
+    {
+      "id": "audit-1786948896167-9l8h",
+      "userId": "usr-admin-001",
+      "userEmail": "admin@byolabs.in",
+      "action": "Approve User",
+      "details": "Approved account for abhay.d.patil96@gmail.com",
+      "timestamp": "2026-08-17T06:41:36.167Z"
+    },
+    {
+      "id": "audit-1786948892946-sfzf",
+      "userId": "usr-admin-001",
+      "userEmail": "admin@byolabs.in",
+      "action": "User Login",
+      "details": "Logged in successfully",
+      "timestamp": "2026-08-17T06:41:32.946Z"
+    },
+    {
+      "id": "audit-1786948809782-tya0",
+      "userId": "usr-07a17591",
+      "userEmail": "abhay.d.patil96@gmail.com",
+      "action": "User Register",
+      "details": "Created account (PENDING approval)",
+      "timestamp": "2026-08-17T06:40:09.782Z"
+    }
+  ],
+  "settings": {
+    "maxActiveLabsPerUser": 2,
+    "maxClusterLabs": 50,
+    "defaultLabTimeoutMinutes": 60,
+    "defaultIdleTimeoutMinutes": 30,
+    "requireAdminApproval": true
+  }
+}

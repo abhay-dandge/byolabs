@@ -120,8 +120,15 @@ export class LabProvisionerService {
         containers: [
           {
             name: 'lab-container',
-            image: lab.dockerImage || 'ubuntu:24.04',
+            image: lab.dockerImage || 'abhaydandgedocker/byolab',
             command: lab.startupCommand ? ['/bin/sh', '-c', lab.startupCommand] : ['/bin/bash'],
+            ports: [
+              {
+                containerPort: 22,
+                name: 'ssh',
+                protocol: 'TCP',
+              },
+            ],
             stdin: true,
             tty: true,
             resources: {
@@ -146,6 +153,34 @@ export class LabProvisionerService {
 
     await this.coreV1Api!.createNamespacedPod(namespace, podSpec);
     console.log(`[K8sProvisioner] Pod ${podName} created in namespace ${namespace}`);
+
+    // 4. Create Kubernetes Service mapping Port 22
+    const serviceSpec: k8s.V1Service = {
+      metadata: {
+        name: 'lab-service',
+        namespace,
+        labels: { app: 'byolabs-lab', 'session-id': session.id },
+      },
+      spec: {
+        selector: { app: 'byolabs-lab', 'session-id': session.id },
+        ports: [
+          {
+            name: 'ssh',
+            port: 22,
+            targetPort: 22 as any,
+            protocol: 'TCP',
+          },
+        ],
+        type: 'ClusterIP',
+      },
+    };
+
+    try {
+      await this.coreV1Api!.createNamespacedService(namespace, serviceSpec);
+      console.log(`[K8sProvisioner] Service lab-service (port 22) created in namespace ${namespace}`);
+    } catch (err: any) {
+      console.warn('[K8sProvisioner] Service creation warning:', err?.message);
+    }
 
     // Wait for Pod Ready (poll up to 30s)
     let isReady = false;

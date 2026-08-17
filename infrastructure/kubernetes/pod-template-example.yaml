@@ -1,18 +1,53 @@
+# ==============================================================================
+# BYOLabs.in — Complete Dynamic Kubernetes Lab Session Manifest
+# Description: Multi-resource YAML template generated programmatically by
+#              LabProvisionerService for each user lab session.
+# ==============================================================================
+
+# 1. Dynamic Isolated Namespace for User Lab Session
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lab-session-7f8d29c4
+  labels:
+    app.kubernetes.io/managed-by: byolabs
+    byolabs.in/session-id: lab-session-7f8d29c4
+    byolabs.in/user-id: usr-abhay-001
+---
+# 2. ResourceQuota to limit CPU/Memory resource consumption
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: lab-quota
+  namespace: lab-session-7f8d29c4
+spec:
+  hard:
+    pods: "2"
+    requests.cpu: "250m"
+    requests.memory: "256Mi"
+    limits.cpu: "1"
+    limits.memory: "1Gi"
+---
+# 3. Interactive Container Pod Spec (abhaydandgedocker/byolab)
 apiVersion: v1
 kind: Pod
 metadata:
-  name: lab-sample-pod
+  name: lab-pod-7f8d29c4
   namespace: lab-session-7f8d29c4
   labels:
     app: byolabs-lab
-    session-id: lab-7f8d29c4
-    user-id: usr-001
+    session-id: lab-session-7f8d29c4
+    user-id: usr-abhay-001
     lab-type: ubuntu-playground
 spec:
   containers:
     - name: lab-container
-      image: ubuntu:24.04
+      image: abhaydandgedocker/byolab
       command: ["/bin/bash"]
+      ports:
+        - name: ssh
+          containerPort: 22
+          protocol: TCP
       stdin: true
       tty: true
       resources:
@@ -24,4 +59,25 @@ spec:
           memory: "1Gi"
       securityContext:
         allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: false
   restartPolicy: Never
+---
+# 4. Service Exposing Container Port 22 (SSH & Terminal Networking)
+apiVersion: v1
+kind: Service
+metadata:
+  name: lab-service
+  namespace: lab-session-7f8d29c4
+  labels:
+    app: byolabs-lab
+    session-id: lab-session-7f8d29c4
+spec:
+  selector:
+    app: byolabs-lab
+    session-id: lab-session-7f8d29c4
+  ports:
+    - name: ssh
+      port: 22
+      targetPort: 22
+      protocol: TCP
+  type: ClusterIP

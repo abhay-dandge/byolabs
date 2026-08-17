@@ -1,0 +1,21 @@
+{
+  "name": "byolabs-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BYOLabs.in — Interactive DevOps/Linux Lab Platform powered by Kubernetes Pods",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build -ws --if-present",
+    "dev:api": "npm --workspace=apps/api run dev",
+    "dev:web": "npm --workspace=apps/web run dev",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "seed": "npm --workspace=apps/api run seed"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "typescript": "^5.3.3"
+  }
+}

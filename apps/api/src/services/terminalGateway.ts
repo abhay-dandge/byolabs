@@ -77,11 +77,15 @@ export function setupTerminalGateway(server: Server) {
     const kc = k8sProvisioner.getKubeConfig();
 
     if (isK8s && kc) {
-      // Solution 3: Try Direct SSH2 Client Proxy over Port 22
+      // 1. Try Native kubectl exec bridge (Most robust in production)
+      const kubectlSuccess = await connectKubectlExecStream(ws, session);
+      if (kubectlSuccess) return;
+
+      // 2. Try Direct SSH2 Client Proxy over Port 22
       const sshSuccess = await connectSSHProxy(ws, session);
       if (sshSuccess) return;
 
-      console.log('[TerminalGateway] SSH2 proxy connection skipped/failed. Trying K8s Exec stream...');
+      console.log('[TerminalGateway] Kubectl & SSH2 proxies skipped/failed. Trying K8s API Exec stream...');
       try {
         await connectK8sExecStream(ws, session, kc);
         return;
@@ -92,6 +96,110 @@ export function setupTerminalGateway(server: Server) {
 
     // Fallback Sandbox Shell Execution
     connectSandboxShell(ws, session);
+  });
+}
+
+function connectKubectlExecStream(ws: WebSocket, session: any): Promise<boolean> {
+  return new Promise((resolve) => {
+    const namespace = session.namespace;
+    const podName = session.podName;
+
+    // Try /bin/bash first, fallback to /bin/sh
+    const proc = spawn('kubectl', ['exec', '-i', '-t', '-n', namespace, podName, '--', '/bin/bash'], {
+      env: { ...process.env, TERM: 'xterm-256color' },
+    });
+
+    let connected = false;
+
+    proc.stdout.on('data', (data) => {
+      if (!connected) {
+        connected = true;
+        ws.send(`\r\n\x1b[32m✔ Connected to Pod [${podName}] in namespace [${namespace}]\x1b[0m\r\n\r\n`);
+        resolve(true);
+      }
+      try { ws.send(data.toString()); } catch (e) {}
+    });
+
+    proc.stderr.on('data', (data) => {
+      const errStr = data.toString();
+      if (!connected && (errStr.includes('exec failed') || errStr.includes('no such file'))) {
+        proc.kill();
+        // Fallback to /bin/sh
+        connectKubectlShStream(ws, session).then(resolve);
+        return;
+      }
+      try { ws.send(errStr); } catch (e) {}
+    });
+
+    ws.on('message', (message: any) => {
+      try {
+        const input = message.toString();
+        if (input.startsWith('{') && input.includes('cols')) return;
+        proc.stdin.write(input);
+      } catch (e) {}
+    });
+
+    proc.on('close', () => {
+      if (!connected) resolve(false);
+      try { ws.close(); } catch (e) {}
+    });
+
+    ws.on('close', () => {
+      try { proc.kill(); } catch (e) {}
+    });
+
+    setTimeout(() => {
+      if (!connected) {
+        proc.kill();
+        resolve(false);
+      }
+    }, 4000);
+  });
+}
+
+function connectKubectlShStream(ws: WebSocket, session: any): Promise<boolean> {
+  return new Promise((resolve) => {
+    const namespace = session.namespace;
+    const podName = session.podName;
+
+    const proc = spawn('kubectl', ['exec', '-i', '-t', '-n', namespace, podName, '--', '/bin/sh'], {
+      env: { ...process.env, TERM: 'xterm-256color' },
+    });
+
+    let connected = false;
+
+    proc.stdout.on('data', (data) => {
+      if (!connected) {
+        connected = true;
+        ws.send(`\r\n\x1b[32m✔ Connected to Pod [${podName}] via /bin/sh\x1b[0m\r\n\r\n`);
+        resolve(true);
+      }
+      try { ws.send(data.toString()); } catch (e) {}
+    });
+
+    ws.on('message', (message: any) => {
+      try {
+        const input = message.toString();
+        if (input.startsWith('{') && input.includes('cols')) return;
+        proc.stdin.write(input);
+      } catch (e) {}
+    });
+
+    proc.on('close', () => {
+      if (!connected) resolve(false);
+      try { ws.close(); } catch (e) {}
+    });
+
+    ws.on('close', () => {
+      try { proc.kill(); } catch (e) {}
+    });
+
+    setTimeout(() => {
+      if (!connected) {
+        proc.kill();
+        resolve(false);
+      }
+    }, 4000);
   });
 }
 

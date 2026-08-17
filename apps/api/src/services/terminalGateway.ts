@@ -7,6 +7,8 @@ import * as k8s from '@kubernetes/client-node';
 import { spawn, ChildProcess } from 'child_process';
 import os from 'os';
 
+import { Client as SSHClient } from 'ssh2';
+
 const JWT_SECRET = process.env.JWT_SECRET || 'byolabs_super_secret_jwt_key_2026_change_in_production';
 
 export function setupTerminalGateway(server: Server) {
@@ -75,6 +77,11 @@ export function setupTerminalGateway(server: Server) {
     const kc = k8sProvisioner.getKubeConfig();
 
     if (isK8s && kc) {
+      // Solution 3: Try Direct SSH2 Client Proxy over Port 22
+      const sshSuccess = await connectSSHProxy(ws, session);
+      if (sshSuccess) return;
+
+      console.log('[TerminalGateway] SSH2 proxy connection skipped/failed. Trying K8s Exec stream...');
       try {
         await connectK8sExecStream(ws, session, kc);
         return;
@@ -85,6 +92,64 @@ export function setupTerminalGateway(server: Server) {
 
     // Fallback Sandbox Shell Execution
     connectSandboxShell(ws, session);
+  });
+}
+
+async function connectSSHProxy(ws: WebSocket, session: any): Promise<boolean> {
+  return new Promise((resolve) => {
+    const conn = new SSHClient();
+    const serviceHost = `lab-service.${session.namespace}.svc.cluster.local`;
+    let isConnected = false;
+
+    conn.on('ready', () => {
+      isConnected = true;
+      ws.send(`\r\n\x1b[32m✔ Connected to SSH2 Proxy [${serviceHost}:22]\x1b[0m\r\n\r\n`);
+
+      conn.shell({ term: 'xterm-256color' }, (err, stream) => {
+        if (err) {
+          conn.end();
+          return resolve(false);
+        }
+
+        stream.on('data', (data: any) => {
+          try { ws.send(data.toString()); } catch (e) {}
+        });
+
+        stream.stderr.on('data', (data: any) => {
+          try { ws.send(data.toString()); } catch (e) {}
+        });
+
+        ws.on('message', (message: any) => {
+          try {
+            const input = message.toString();
+            if (input.startsWith('{') && input.includes('cols')) {
+              const { cols, rows } = JSON.parse(input);
+              stream.setWindow(rows, cols, 0, 0);
+              return;
+            }
+            stream.write(input);
+          } catch (e) {}
+        });
+
+        stream.on('close', () => {
+          conn.end();
+          ws.close();
+        });
+      });
+      resolve(true);
+    });
+
+    conn.on('error', (err) => {
+      if (!isConnected) resolve(false);
+    });
+
+    conn.connect({
+      host: serviceHost,
+      port: 22,
+      username: process.env.SSH_USER || 'root',
+      password: process.env.SSH_PASSWORD || 'root',
+      readyTimeout: 4000,
+    });
   });
 }
 

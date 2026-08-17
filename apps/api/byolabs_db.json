@@ -34,7 +34,7 @@
       "category": "Linux",
       "difficulty": "Beginner",
       "durationMinutes": 60,
-      "dockerImage": "ubuntu:24.04",
+      "dockerImage": "abhaydandgedocker/byolab",
       "cpuRequest": "250m",
       "cpuLimit": "1",
       "memoryRequest": "256Mi",

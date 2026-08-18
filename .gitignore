@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Production builds
+dist/
+build/
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env*.local
+
+# Database / Local temp files
+*.db
+*.sqlite
+byolabs_db.json
+
+# System & IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

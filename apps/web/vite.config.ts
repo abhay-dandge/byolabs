@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
+    allowedHosts: true,
     proxy: {
       '/api': {
         target: 'http://localhost:4000',
@@ -13,6 +14,10 @@ export default defineConfig({
         ws: true,
       },
     },
+  },
+  preview: {
+    port: 3000,
+    allowedHosts: true,
   },
   resolve: {
     alias: {

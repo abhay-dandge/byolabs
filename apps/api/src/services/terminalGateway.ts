@@ -104,8 +104,8 @@ function connectKubectlExecStream(ws: WebSocket, session: any): Promise<boolean>
     const namespace = session.namespace;
     const podName = session.podName;
 
-    // Try /bin/bash first, fallback to /bin/sh
-    const proc = spawn('kubectl', ['exec', '-i', '-t', '-n', namespace, podName, '--', '/bin/bash'], {
+    // Remove -t flag to avoid "Unable to use a TTY - input is not a terminal" when spawned via Node process pipes
+    const proc = spawn('kubectl', ['exec', '-i', '-n', namespace, podName, '--', '/bin/bash'], {
       env: { ...process.env, TERM: 'xterm-256color' },
     });
 
@@ -122,6 +122,7 @@ function connectKubectlExecStream(ws: WebSocket, session: any): Promise<boolean>
 
     proc.stderr.on('data', (data) => {
       const errStr = data.toString();
+      if (errStr.includes('Unable to use a TTY')) return; // Ignore harmless TTY warning
       if (!connected && (errStr.includes('exec failed') || errStr.includes('no such file'))) {
         proc.kill();
         // Fallback to /bin/sh
@@ -162,7 +163,7 @@ function connectKubectlShStream(ws: WebSocket, session: any): Promise<boolean> {
     const namespace = session.namespace;
     const podName = session.podName;
 
-    const proc = spawn('kubectl', ['exec', '-i', '-t', '-n', namespace, podName, '--', '/bin/sh'], {
+    const proc = spawn('kubectl', ['exec', '-i', '-n', namespace, podName, '--', '/bin/sh'], {
       env: { ...process.env, TERM: 'xterm-256color' },
     });
 
@@ -175,6 +176,12 @@ function connectKubectlShStream(ws: WebSocket, session: any): Promise<boolean> {
         resolve(true);
       }
       try { ws.send(data.toString()); } catch (e) {}
+    });
+
+    proc.stderr.on('data', (data) => {
+      const errStr = data.toString();
+      if (errStr.includes('Unable to use a TTY')) return;
+      try { ws.send(errStr); } catch (e) {}
     });
 
     ws.on('message', (message: any) => {
@@ -213,7 +220,7 @@ async function connectSSHProxy(ws: WebSocket, session: any): Promise<boolean> {
       isConnected = true;
       ws.send(`\r\n\x1b[32m✔ Connected to SSH2 Proxy [${serviceHost}:22]\x1b[0m\r\n\r\n`);
 
-      conn.shell({ term: 'xterm-256color' }, (err, stream) => {
+      conn.shell({ term: 'xterm-256color' }, (err: any, stream: any) => {
         if (err) {
           conn.end();
           return resolve(false);
@@ -247,7 +254,7 @@ async function connectSSHProxy(ws: WebSocket, session: any): Promise<boolean> {
       resolve(true);
     });
 
-    conn.on('error', (err) => {
+    conn.on('error', (err: any) => {
       if (!isConnected) resolve(false);
     });
 

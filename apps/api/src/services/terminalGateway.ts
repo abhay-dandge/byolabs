@@ -77,24 +77,26 @@ export function setupTerminalGateway(server: Server) {
     const kc = k8sProvisioner.getKubeConfig();
 
     if (isK8s && kc) {
-      // 1. Try Native kubectl exec bridge (Most robust in production)
-      const kubectlSuccess = await connectKubectlExecStream(ws, session);
-      if (kubectlSuccess) return;
-
-      // 2. Try Direct SSH2 Client Proxy over Port 22
-      const sshSuccess = await connectSSHProxy(ws, session);
-      if (sshSuccess) return;
-
-      console.log('[TerminalGateway] Kubectl & SSH2 proxies skipped/failed. Trying K8s API Exec stream...');
+      // 1. Try Native Kubernetes API Exec stream using @kubernetes/client-node
       try {
+        console.log(`[TerminalGateway] Attempting native K8s API Exec for session ${session.id}...`);
         await connectK8sExecStream(ws, session, kc);
         return;
       } catch (err: any) {
-        console.warn('[TerminalGateway] K8s Exec stream error, falling back to Sandbox shell:', err?.message || err);
+        console.warn('[TerminalGateway] Native K8s API Exec stream failed:', err?.message || err);
       }
+
+      // 2. Try kubectl CLI exec process bridge
+      const kubectlSuccess = await connectKubectlExecStream(ws, session);
+      if (kubectlSuccess) return;
+
+      // 3. Try SSH Proxy
+      const sshSuccess = await connectSSHProxy(ws, session);
+      if (sshSuccess) return;
     }
 
-    // Fallback Sandbox Shell Execution
+    // 4. Fallback Sandbox Shell Execution
+    console.log(`[TerminalGateway] Operating terminal in Sandbox mode for session ${session.id}`);
     connectSandboxShell(ws, session);
   });
 }
@@ -104,7 +106,6 @@ function connectKubectlExecStream(ws: WebSocket, session: any): Promise<boolean>
     const namespace = session.namespace;
     const podName = session.podName;
 
-    // Remove -t flag to avoid "Unable to use a TTY - input is not a terminal" when spawned via Node process pipes
     const proc = spawn('kubectl', ['exec', '-i', '-n', namespace, podName, '--', '/bin/bash'], {
       env: { ...process.env, TERM: 'xterm-256color' },
     });
@@ -268,59 +269,83 @@ async function connectSSHProxy(ws: WebSocket, session: any): Promise<boolean> {
   });
 }
 
-async function connectK8sExecStream(ws: WebSocket, session: any, kc: k8s.KubeConfig) {
-  const exec = new k8s.Exec(kc);
+async function connectK8sExecStream(ws: WebSocket, session: any, kc: k8s.KubeConfig): Promise<void> {
+  return new Promise<void>(async (resolve, reject) => {
+    const exec = new k8s.Exec(kc);
+    const command = ['/bin/bash'];
+    const namespace = session.namespace;
+    const podName = session.podName;
+    const container = 'lab-container';
 
-  const command = ['/bin/bash'];
-  const namespace = session.namespace;
-  const podName = session.podName;
-  const container = 'lab-container';
+    const { PassThrough } = await import('stream');
+    const stdoutStream = new PassThrough();
+    const stderrStream = new PassThrough();
+    const stdinStream = new PassThrough();
 
-  ws.send(`\r\n\x1b[32m✔ Connected to Kubernetes Pod Container [${podName}] in namespace [${namespace}]\x1b[0m\r\n\r\n`);
+    let isConnected = false;
 
-  try {
-    const stream = await exec.exec(
-      namespace,
-      podName,
-      container,
-      command,
-      process.stdout,
-      process.stderr,
-      process.stdin,
-      true, // tty
-      (status: any) => {
-        console.log('[K8sExec] Stream closed with status:', status);
-        ws.close();
+    stdoutStream.on('data', (data: Buffer | string) => {
+      if (!isConnected) {
+        isConnected = true;
+        ws.send(`\r\n\x1b[32m✔ Connected to Kubernetes Pod Container [${podName}] in namespace [${namespace}]\x1b[0m\r\n\r\n`);
+        resolve();
       }
-    );
+      try { ws.send(data.toString()); } catch (e) {}
+    });
 
-    ws.on('message', (data: any) => {
+    stderrStream.on('data', (data: Buffer | string) => {
+      const errStr = data.toString();
+      if (!isConnected && (errStr.includes('exec failed') || errStr.includes('command not found') || errStr.includes('no such file'))) {
+        reject(new Error(`Exec failed: ${errStr}`));
+        return;
+      }
+      try { ws.send(errStr); } catch (e) {}
+    });
+
+    ws.on('message', (message: any) => {
       try {
-        const msg = data.toString();
-        // Check for resize command JSON
-        if (msg.startsWith('{') && msg.includes('resize')) {
+        const input = message.toString();
+        // Ignore resize events if format is JSON resize
+        if (input.startsWith('{') && input.includes('cols')) {
           return;
         }
-        if (typeof (stream as any).send === 'function') {
-          (stream as any).send(msg);
-        } else if (typeof (stream as any).write === 'function') {
-          (stream as any).write(msg);
-        }
+        stdinStream.write(input);
       } catch (e) {}
     });
 
     ws.on('close', () => {
-      try {
-        if (typeof (stream as any).close === 'function') {
-          (stream as any).close();
-        } else if (typeof (stream as any).end === 'function') {
-          (stream as any).end();
-        }
-      } catch (e) {}
+      try { stdinStream.end(); } catch (e) {}
     });
-  } catch (err: any) {
-    throw err;
-  }
+
+    try {
+      await exec.exec(
+        namespace,
+        podName,
+        container,
+        command,
+        stdoutStream,
+        stderrStream,
+        stdinStream,
+        true, // tty
+        (status: any) => {
+          console.log('[K8sExec] Exec stream ended with status:', status?.status);
+          try { ws.close(); } catch (e) {}
+        }
+      );
+
+      // Set connection timeout safety net
+      setTimeout(() => {
+        if (!isConnected) {
+          // If no stdout was emitted within 3s, send initial prompt connection message
+          isConnected = true;
+          ws.send(`\r\n\x1b[32m✔ Connected to Kubernetes Pod Container [${podName}] in namespace [${namespace}]\x1b[0m\r\n\r\n`);
+          resolve();
+        }
+      }, 3000);
+    } catch (err: any) {
+      reject(err);
+    }
+  });
 }
 
 function connectSandboxShell(ws: WebSocket, session: any) {

@@ -49,11 +49,22 @@ export class TaskValidatorService {
   private async execK8sValidation(session: LabSession, script: string, kc: k8s.KubeConfig): Promise<{ success: boolean; message: string }> {
     const k8sExec = new k8s.Exec(kc);
 
+    const { PassThrough } = await import('stream');
+    const stdoutStream = new PassThrough();
+    const stderrStream = new PassThrough();
+
     return new Promise((resolve) => {
       let stdoutBuf = '';
       let stderrBuf = '';
 
-      // Create stream for command execution
+      stdoutStream.on('data', (data) => {
+        stdoutBuf += data.toString();
+      });
+
+      stderrStream.on('data', (data) => {
+        stderrBuf += data.toString();
+      });
+
       const command = ['/bin/sh', '-c', script];
 
       k8sExec.exec(
@@ -61,9 +72,9 @@ export class TaskValidatorService {
         session.podName,
         'lab-container',
         command,
-        { write: (data: Buffer | string) => (stdoutBuf += data.toString()) } as any,
-        { write: (data: Buffer | string) => (stderrBuf += data.toString()) } as any,
-        null as any,
+        stdoutStream,
+        stderrStream,
+        null,
         false,
         (status: any) => {
           if (status.status === 'Success') {
@@ -74,7 +85,7 @@ export class TaskValidatorService {
           } else {
             resolve({
               success: false,
-              message: stderrBuf.trim() || `Validation failed with status ${status.reason}`,
+              message: stderrBuf.trim() || `Validation failed with status ${status.reason || status.status}`,
             });
           }
         }

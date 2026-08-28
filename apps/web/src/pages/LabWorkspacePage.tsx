@@ -15,6 +15,7 @@ export const LabWorkspacePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
 
   const fetchSession = async () => {
     if (!sessionId) return;
@@ -32,6 +33,46 @@ export const LabWorkspacePage: React.FC = () => {
   useEffect(() => {
     fetchSession();
   }, [sessionId]);
+
+  useEffect(() => {
+    if (!session) return;
+
+    const calculateRemaining = () => {
+      let targetTime: number;
+
+      if (session.expiresAt) {
+        targetTime = new Date(session.expiresAt).getTime();
+      } else if (session.startedAt) {
+        const durationMins = lab?.durationMinutes || 60;
+        targetTime = new Date(session.startedAt).getTime() + durationMins * 60 * 1000;
+      } else {
+        const durationMins = lab?.durationMinutes || 60;
+        targetTime = Date.now() + durationMins * 60 * 1000;
+      }
+
+      const diffSecs = Math.max(0, Math.floor((targetTime - Date.now()) / 1000));
+      setRemainingSeconds(diffSecs);
+    };
+
+    calculateRemaining();
+    const interval = setInterval(calculateRemaining, 1000);
+
+    return () => clearInterval(interval);
+  }, [session, lab]);
+
+  const formatCountdown = (totalSecs: number | null): string => {
+    if (totalSecs === null) return '--:--';
+    const hrs = Math.floor(totalSecs / 3600);
+    const mins = Math.floor((totalSecs % 3600) / 60);
+    const secs = totalSecs % 60;
+
+    const pad = (n: number) => n.toString().padStart(2, '0');
+
+    if (hrs > 0) {
+      return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
+    }
+    return `${pad(mins)}:${pad(secs)}`;
+  };
 
   const handleStopLab = async () => {
     if (!sessionId) return;
@@ -83,6 +124,18 @@ export const LabWorkspacePage: React.FC = () => {
     );
   }
 
+  const isExpired = remainingSeconds !== null && remainingSeconds <= 0;
+  const isWarning = remainingSeconds !== null && remainingSeconds > 0 && remainingSeconds <= 600; // < 10 mins
+  const isCritical = remainingSeconds !== null && remainingSeconds > 0 && remainingSeconds <= 300; // < 5 mins
+
+  const timerBadgeStyle = isExpired
+    ? 'text-rose-300 bg-rose-950/80 border-rose-800'
+    : isCritical
+    ? 'text-rose-400 bg-rose-950/60 border-rose-800 animate-pulse'
+    : isWarning
+    ? 'text-amber-400 bg-amber-950/60 border-amber-800'
+    : 'text-cyan-400 bg-cyan-950/60 border-cyan-800/60';
+
   return (
     <div className="h-[calc(100vh-4.1rem)] flex flex-col overflow-hidden bg-slate-950">
       {/* Workspace Header Bar */}
@@ -99,23 +152,26 @@ export const LabWorkspacePage: React.FC = () => {
             </span>
           </div>
 
-          <div className="hidden md:flex items-center space-x-1.5 text-emerald-400">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>{session.status}</span>
+          <div className={`hidden md:flex items-center space-x-1.5 ${isExpired ? 'text-rose-400' : 'text-emerald-400'}`}>
+            <span className={`w-2 h-2 rounded-full ${isExpired ? 'bg-rose-400' : 'bg-emerald-400 animate-pulse'}`}></span>
+            <span>{isExpired ? 'EXPIRED' : session.status}</span>
           </div>
         </div>
 
         <div className="flex items-center space-x-4">
-          <div className="hidden sm:flex items-center space-x-1 text-slate-400">
-            <Clock className="w-3.5 h-3.5 text-slate-500 mr-1" />
-            <span>Time Remaining: ~{lab.durationMinutes}m</span>
+          {/* Dynamic Live Remaining Time Countdown */}
+          <div className={`flex items-center space-x-1 px-3 py-1 rounded-lg border font-mono font-semibold transition ${timerBadgeStyle}`}>
+            <Clock className="w-3.5 h-3.5 mr-1" />
+            <span>
+              {isExpired ? 'EXPIRED (00:00)' : `Time Remaining: ${formatCountdown(remainingSeconds)}`}
+            </span>
           </div>
 
           <div className="flex items-center space-x-2">
             <button
               onClick={handleResetLab}
-              disabled={actionLoading}
-              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-sans font-semibold text-xs flex items-center space-x-1 transition"
+              disabled={actionLoading || isExpired}
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-300 font-sans font-semibold text-xs flex items-center space-x-1 transition"
             >
               <RefreshCw className="w-3 h-3 text-cyan-400" />
               <span>Reset</span>

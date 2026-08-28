@@ -210,8 +210,20 @@ class FileStore {
     if (this.data.users.length === 0) {
       this.addUser(adminUser, adminPasswordHash);
     }
-    if (this.data.labs.length === 0) {
-      this.data.labs = seedLabs;
+
+    let modified = false;
+    for (const seedLab of seedLabs) {
+      const idx = this.data.labs.findIndex((l) => l.id === seedLab.id || l.slug === seedLab.slug);
+      if (idx === -1) {
+        this.data.labs.push(seedLab);
+        modified = true;
+      }
+    }
+
+    if (modified || this.data.labs.length === 0) {
+      if (this.data.labs.length === 0) {
+        this.data.labs = seedLabs;
+      }
       this.save();
     }
   }

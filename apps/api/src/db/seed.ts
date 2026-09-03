@@ -154,190 +154,61 @@ chmod +x sample.sh
       ],
     },
     {
-      id: 'lab-docker-fundamentals',
-      slug: 'docker-fundamentals',
-      name: 'Docker Fundamentals & Containers',
-      description: 'Learn container mechanics, image inspection, container lifecycle management, port mapping, and volume persistence.',
-      category: 'Docker',
-      difficulty: 'Intermediate',
-      durationMinutes: 60,
-      dockerImage: 'docker:dind',
-      cpuRequest: '500m',
-      cpuLimit: '1',
-      memoryRequest: '512Mi',
-      memoryLimit: '1Gi',
-      startupCommand: '',
-      terminalEnabled: true,
-      browserAccess: true,
-      isPublished: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      instructionsMarkdown: `
-# Docker Fundamentals
-
-Explore container primitives and image inspection in an isolated container sandbox.
-
-\`\`\`bash
-uname -a
-echo "Testing Docker environment..."
-\`\`\`
-      `,
-      tasks: [
-        {
-          id: 'task-docker-1',
-          title: 'Verify Alpine Environment',
-          description: 'Verify your container environment with `cat /etc/os-release` or docker daemon.',
-          validationScript: 'test -f /etc/alpine-release || test -f /etc/os-release',
-        },
-      ],
-    },
-    {
-      id: 'lab-docker-dind',
-      slug: 'docker-dind-lab',
-      name: 'Docker-in-Docker (DinD) & Image Management',
-      description: 'Interactive container lab running official Docker-in-Docker (docker:dind) image to pull Docker images, manage container layers, and run sub-containers.',
-      category: 'Docker',
-      difficulty: 'Intermediate',
-      durationMinutes: 60,
-      dockerImage: 'docker:dind',
-      cpuRequest: '500m',
-      cpuLimit: '1',
-      memoryRequest: '512Mi',
-      memoryLimit: '1Gi',
-      storage: '1Gi',
-      startupCommand: '',
-      terminalEnabled: true,
-      browserAccess: true,
-      isPublished: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      instructionsMarkdown: `
-# Docker-in-Docker (DinD) & Container Operations
-
-Welcome to your **Docker-in-Docker (\`docker:dind\`)** interactive lab environment! In this lab, you will learn how to pull Docker images, manage containers, and work with container registries using the official Docker daemon.
-
----
-
-## Key Learning Objectives
-1. **Pull Images**: Download container images from public registries using \`docker pull\`.
-2. **Inspect Images & Layers**: List local images and view image configuration details.
-3. **Run Containers**: Launch lightweight sub-containers inside your DinD environment.
-4. **Tag & Export**: Assign custom tags to Docker images.
-
----
-
-## Guided Steps
-
-### Step 1: Pull the Official Docker Image
-Pull the official \`docker\` image into your local docker storage:
-
-\`\`\`bash
-docker pull docker
-\`\`\`
-
-### Step 2: Pull the Lightweight Alpine Linux Image
-Download the \`alpine\` image from Docker Hub:
-
-\`\`\`bash
-docker pull alpine
-\`\`\`
-
-### Step 3: Inspect Local Image Inventory
-List all downloaded images in your local daemon and save the inventory output:
-
-\`\`\`bash
-docker images > /tmp/images.txt
-cat /tmp/images.txt
-\`\`\`
-
-### Step 4: Tag a Local Docker Image
-Create a custom tag \`my-docker:latest\` for the pulled \`docker\` image:
-
-\`\`\`bash
-docker tag docker my-docker:latest
-\`\`\`
-
----
-
-## Tasks Checklist
-Execute the steps above in the terminal, then click **Verify Task** on each item to submit for grading.
-      `,
-      tasks: [
-        {
-          id: 'task-dind-1',
-          title: '1. Pull Official Docker Image (docker pull docker)',
-          description: 'Execute `docker pull docker` in the terminal to pull the official Docker image from Docker Hub.',
-          validationScript: 'docker image inspect docker >/dev/null 2>&1 || docker images | grep -q "docker" || test -f /tmp/pulled_docker.txt',
-        },
-        {
-          id: 'task-dind-2',
-          title: '2. Pull Alpine Linux Image (docker pull alpine)',
-          description: 'Execute `docker pull alpine` in the terminal to pull the Alpine Linux image.',
-          validationScript: 'docker image inspect alpine >/dev/null 2>&1 || docker images | grep -q "alpine"',
-        },
-        {
-          id: 'task-dind-3',
-          title: '3. Save Image Inventory to /tmp/images.txt',
-          description: 'Run `docker images > /tmp/images.txt` to export the list of local docker images.',
-          validationScript: 'test -s /tmp/images.txt',
-        },
-        {
-          id: 'task-dind-4',
-          title: '4. Tag Docker Image as my-docker:latest',
-          description: 'Execute `docker tag docker my-docker:latest` to assign a local tag.',
-          validationScript: 'docker image inspect my-docker:latest >/dev/null 2>&1 || docker images | grep -q "my-docker"',
-        },
-      ],
-    },
-    {
       id: 'lab-docker-playground',
       slug: 'docker-playground',
-      name: 'Docker Playground (Ubuntu Engine)',
-      description: 'Interactive Ubuntu 24.04 LTS playground environment equipped with Docker Engine installed via official get.docker.sh script.',
+      name: 'Docker Playground (Sidecar Engine)',
+      description: 'Production-grade Multi-Container Docker Playground utilizing docker:27-cli primary container linked via TLS to a privileged docker:27-dind sidecar daemon.',
       category: 'Docker',
       difficulty: 'Intermediate',
       durationMinutes: 60,
-      dockerImage: 'ubuntu:latest',
+      dockerImage: 'docker:27-cli',
       cpuRequest: '500m',
       cpuLimit: '1',
       memoryRequest: '512Mi',
       memoryLimit: '1Gi',
       storage: '1Gi',
-      startupCommand: 'which curl >/dev/null 2>&1 || (apt-get update && apt-get install -y curl sudo ca-certificates); curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh',
+      startupCommand: '',
       terminalEnabled: true,
       browserAccess: true,
       isPublished: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       instructionsMarkdown: `
-# Docker Playground (Ubuntu Engine)
+# Docker Playground (Multi-Container Sidecar Engine)
 
-Welcome to your **Ubuntu 24.04** interactive lab environment configured with Docker Engine!
+Welcome to your isolated **Docker Playground** powered by a multi-container Kubernetes Pod architecture!
 
 ---
 
-## Automated Setup Executed at Startup
-1. Checks for \`curl\` package (installs \`curl\`, \`sudo\`, \`ca-certificates\` if missing).
-2. Downloads official Docker script: \`curl -fsSL https://get.docker.com -o get-docker.sh\`.
-3. Installs official Docker Engine via \`sh get-docker.sh\`.
+## Pod Architecture Breakdown
+- **Primary CLI Container**: \`docker:27-cli\` connected with \`DOCKER_HOST=tcp://localhost:2376\`
+- **Sidecar Daemon Container**: \`docker:27-dind\` (privileged daemon issuing TLS certs into \`/certs\`)
+- **Shared Storage**: \`dind-certs\` shared \`emptyDir\` volume
 
 ---
 
 ## Guided Instructions
 
-### Step 1: Check Installed Docker Version
-Verify that Docker Engine is installed:
+### Step 1: Verify Docker Daemon TLS Connection
+Verify connection from \`docker:27-cli\` to the \`dind-daemon\` sidecar:
 
 \`\`\`bash
-docker --version
+docker version
 \`\`\`
 
-### Step 2: Inspect get-docker.sh Installer Script
-Examine the official Docker installation script generated during container setup:
+### Step 2: Test Container Lifecycle & Hello-World
+Run a lightweight \`hello-world\` container:
 
 \`\`\`bash
-ls -la get-docker.sh
-head -n 20 get-docker.sh
+docker run hello-world
+\`\`\`
+
+### Step 3: Pull & Inspect Alpine Linux Image
+Pull the official \`alpine\` image:
+
+\`\`\`bash
+docker pull alpine
+docker images
 \`\`\`
 
 ---
@@ -347,15 +218,21 @@ head -n 20 get-docker.sh
       tasks: [
         {
           id: 'task-docker-play-1',
-          title: '1. Verify Docker Installation Script (get-docker.sh)',
-          description: 'Verify `get-docker.sh` installer script exists or check `docker --version`.',
-          validationScript: 'test -f get-docker.sh || which docker || test -f /usr/bin/docker',
+          title: '1. Verify Docker Daemon Connection (docker version)',
+          description: 'Execute `docker version` in terminal to confirm CLI connection to DinD sidecar daemon.',
+          validationScript: 'docker version || docker info',
         },
         {
           id: 'task-docker-play-2',
-          title: '2. Check Docker Engine Version',
-          description: 'Execute `docker --version` in terminal.',
-          validationScript: 'docker --version || test -f get-docker.sh',
+          title: '2. Run Hello-World Container',
+          description: 'Run `docker run hello-world` in terminal.',
+          validationScript: 'docker ps -a | grep -i "hello-world" || docker images | grep -q "hello-world"',
+        },
+        {
+          id: 'task-docker-play-3',
+          title: '3. Pull Alpine Image',
+          description: 'Execute `docker pull alpine` in terminal.',
+          validationScript: 'docker image inspect alpine >/dev/null 2>&1 || docker images | grep -q "alpine"',
         },
       ],
     },

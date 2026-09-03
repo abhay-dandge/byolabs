@@ -125,49 +125,110 @@ export class LabProvisionerService {
       ? { privileged: true, allowPrivilegeEscalation: true, readOnlyRootFilesystem: false }
       : { allowPrivilegeEscalation: false, readOnlyRootFilesystem: false };
 
+    const isSidecarDind = lab.slug === 'docker-playground' || lab.dockerImage === 'docker:27-cli';
+
     // 3. Create Pod Spec
-    const podSpec: k8s.V1Pod = {
-      metadata: {
-        name: podName,
-        namespace,
-        labels: {
-          app: 'byolabs-lab',
-          'session-id': session.id,
-          'user-id': session.userId,
-          'lab-type': lab.slug,
+    let podSpec: k8s.V1Pod;
+
+    if (isSidecarDind) {
+      podSpec = {
+        metadata: {
+          name: podName,
+          namespace,
+          labels: {
+            app: 'byolabs-lab',
+            'session-id': session.id,
+            'user-id': session.userId,
+            'lab-type': lab.slug,
+          },
         },
-      },
-      spec: {
-        containers: [
-          {
-            name: 'lab-container',
-            image: lab.dockerImage || 'ubuntu:latest',
-            ...(containerCommand ? { command: containerCommand } : {}),
-            ports: [
-              {
-                containerPort: 22,
-                name: 'ssh',
-                protocol: 'TCP',
-              },
-            ],
-            stdin: true,
-            tty: true,
-            resources: {
-              requests: {
-                cpu: lab.cpuRequest || '250m',
-                memory: lab.memoryRequest || '256Mi',
-              },
-              limits: {
-                cpu: lab.cpuLimit || '1',
-                memory: lab.memoryLimit || '1Gi',
+        spec: {
+          containers: [
+            {
+              name: 'lab-container',
+              image: 'docker:27-cli',
+              command: ['/bin/sh', '-c', 'while [ ! -f /certs/client/ca.pem ]; do sleep 1; done; sh'],
+              env: [
+                { name: 'DOCKER_HOST', value: 'tcp://localhost:2376' },
+                { name: 'DOCKER_TLS_VERIFY', value: '1' },
+                { name: 'DOCKER_CERT_PATH', value: '/certs/client' },
+              ],
+              volumeMounts: [
+                { name: 'dind-certs', mountPath: '/certs' },
+              ],
+              stdin: true,
+              tty: true,
+              resources: {
+                requests: { cpu: lab.cpuRequest || '250m', memory: lab.memoryRequest || '256Mi' },
+                limits: { cpu: lab.cpuLimit || '1', memory: lab.memoryLimit || '1Gi' },
               },
             },
-            securityContext,
+            {
+              name: 'dind-daemon',
+              image: 'docker:27-dind',
+              securityContext: { privileged: true },
+              env: [
+                { name: 'DOCKER_TLS_CERTDIR', value: '/certs' },
+              ],
+              volumeMounts: [
+                { name: 'dind-certs', mountPath: '/certs' },
+              ],
+              resources: {
+                requests: { cpu: '250m', memory: '256Mi' },
+                limits: { cpu: '1', memory: '1Gi' },
+              },
+            },
+          ],
+          volumes: [
+            { name: 'dind-certs', emptyDir: {} },
+          ],
+          restartPolicy: 'Never',
+        },
+      };
+    } else {
+      podSpec = {
+        metadata: {
+          name: podName,
+          namespace,
+          labels: {
+            app: 'byolabs-lab',
+            'session-id': session.id,
+            'user-id': session.userId,
+            'lab-type': lab.slug,
           },
-        ],
-        restartPolicy: 'Never',
-      },
-    };
+        },
+        spec: {
+          containers: [
+            {
+              name: 'lab-container',
+              image: lab.dockerImage || 'ubuntu:latest',
+              ...(containerCommand ? { command: containerCommand } : {}),
+              ports: [
+                {
+                  containerPort: 22,
+                  name: 'ssh',
+                  protocol: 'TCP',
+                },
+              ],
+              stdin: true,
+              tty: true,
+              resources: {
+                requests: {
+                  cpu: lab.cpuRequest || '250m',
+                  memory: lab.memoryRequest || '256Mi',
+                },
+                limits: {
+                  cpu: lab.cpuLimit || '1',
+                  memory: lab.memoryLimit || '1Gi',
+                },
+              },
+              securityContext,
+            },
+          ],
+          restartPolicy: 'Never',
+        },
+      };
+    }
 
     await this.coreV1Api!.createNamespacedPod(namespace, podSpec);
     console.log(`[K8sProvisioner] Pod ${podName} created in namespace ${namespace}`);

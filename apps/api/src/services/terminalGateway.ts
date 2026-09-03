@@ -270,13 +270,13 @@ async function connectSSHProxy(ws: WebSocket, session: any): Promise<boolean> {
 }
 
 async function connectK8sExecStream(ws: WebSocket, session: any, kc: k8s.KubeConfig): Promise<void> {
-  const tryExecShell = (shellCmd: string[]): Promise<void> => {
+  const tryExecShell = (shellCmd: string[], targetContainer?: string): Promise<void> => {
     return new Promise<void>(async (resolve, reject) => {
       const exec = new k8s.Exec(kc);
       const namespace = session.namespace;
       const podName = session.podName;
       const isDockerLab = session.labSlug?.includes('docker') || session.labId?.includes('docker');
-      const container = isDockerLab ? 'docker-cli' : 'lab-container';
+      const container = targetContainer || (isDockerLab ? 'docker-cli' : 'lab-container');
 
       const { PassThrough } = await import('stream');
       const stdoutStream = new PassThrough();
@@ -288,7 +288,7 @@ async function connectK8sExecStream(ws: WebSocket, session: any, kc: k8s.KubeCon
       stdoutStream.on('data', (data: Buffer | string) => {
         if (!isConnected) {
           isConnected = true;
-          ws.send(`\r\n\x1b[32m✔ Connected to Kubernetes Pod Container [${podName}] in namespace [${namespace}]\x1b[0m\r\n\r\n`);
+          ws.send(`\r\n\x1b[32m✔ Connected to Kubernetes Pod Container [${podName}] (${container}) in namespace [${namespace}]\x1b[0m\r\n\r\n`);
           resolve();
         }
         try { ws.send(data.toString()); } catch (e) {}
@@ -296,7 +296,7 @@ async function connectK8sExecStream(ws: WebSocket, session: any, kc: k8s.KubeCon
 
       stderrStream.on('data', (data: Buffer | string) => {
         const errStr = data.toString();
-        if (!isConnected && (errStr.includes('exec failed') || errStr.includes('command not found') || errStr.includes('no such file'))) {
+        if (!isConnected && (errStr.includes('exec failed') || errStr.includes('command not found') || errStr.includes('no such file') || errStr.includes('container not found'))) {
           reject(new Error(`Exec failed: ${errStr}`));
           return;
         }
@@ -338,7 +338,7 @@ async function connectK8sExecStream(ws: WebSocket, session: any, kc: k8s.KubeCon
         setTimeout(() => {
           if (!isConnected) {
             isConnected = true;
-            ws.send(`\r\n\x1b[32m✔ Connected to Kubernetes Pod Container [${podName}] in namespace [${namespace}]\x1b[0m\r\n\r\n`);
+            ws.send(`\r\n\x1b[32m✔ Connected to Kubernetes Pod Container [${podName}] (${container}) in namespace [${namespace}]\x1b[0m\r\n\r\n`);
             resolve();
           }
         }, 3000);
@@ -352,8 +352,12 @@ async function connectK8sExecStream(ws: WebSocket, session: any, kc: k8s.KubeCon
   try {
     await tryExecShell(['/bin/bash']);
   } catch (err: any) {
-    console.warn('[TerminalGateway] /bin/bash exec failed, retrying with /bin/sh...', err?.message || err);
-    await tryExecShell(['/bin/sh']);
+    try {
+      await tryExecShell(['/bin/sh']);
+    } catch (err2: any) {
+      console.warn('[TerminalGateway] Primary exec target failed, retrying with container lab-container...', err2?.message || err2);
+      await tryExecShell(['/bin/bash'], 'lab-container');
+    }
   }
 }
 

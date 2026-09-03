@@ -237,8 +237,49 @@ export class LabProvisionerService {
       console.log(`[K8sProvisioner] Pod ${podName} created in namespace ${namespace}`);
     } catch (err: any) {
       const detail = err?.body?.message || err?.message || String(err);
-      console.error(`[K8sProvisioner] Failed to create Pod ${podName} in namespace ${namespace}:`, detail);
-      throw new Error(`Pod creation failed: ${detail}`);
+
+      // Handle GKE Autopilot / Warden Policy enforcement (disallow-privilege)
+      if (isSidecarDind && (detail.includes('disallow-privilege') || detail.includes('privileged') || detail.includes('Warden') || detail.includes('autogke'))) {
+        console.warn(`[K8sProvisioner] Privileged sidecar rejected by GKE Autopilot Warden (${detail}). Retrying with GKE Autopilot-compliant Pod spec...`);
+        db.addLog('warn', 'Provisioner', `GKE Autopilot Warden blocked privileged mode. Provisioning GKE-compliant container for session ${session.id}.`);
+
+        const autopilotPodSpec: k8s.V1Pod = {
+          metadata: {
+            name: podName,
+            namespace,
+            labels: {
+              app: 'byolabs-lab',
+              'session-id': session.id,
+              'user-id': session.userId,
+              'lab-type': lab.slug,
+            },
+          },
+          spec: {
+            containers: [
+              {
+                name: 'lab-container',
+                image: 'ubuntu:latest',
+                command: ['/bin/bash'],
+                ports: [{ containerPort: 22, name: 'ssh', protocol: 'TCP' }],
+                stdin: true,
+                tty: true,
+                resources: {
+                  requests: { cpu: '250m', memory: '256Mi' },
+                  limits: { cpu: '1', memory: '1Gi' },
+                },
+                securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: false },
+              },
+            ],
+            restartPolicy: 'Never',
+          },
+        };
+
+        await this.coreV1Api!.createNamespacedPod(namespace, autopilotPodSpec);
+        console.log(`[K8sProvisioner] GKE Autopilot Pod ${podName} created in namespace ${namespace}`);
+      } else {
+        console.error(`[K8sProvisioner] Failed to create Pod ${podName} in namespace ${namespace}:`, detail);
+        throw new Error(`Pod creation failed: ${detail}`);
+      }
     }
 
     // 4. Create Kubernetes Service mapping Port 22

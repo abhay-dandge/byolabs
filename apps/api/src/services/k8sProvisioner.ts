@@ -104,6 +104,25 @@ export class LabProvisionerService {
       console.warn('[K8sProvisioner] Quotas apply warning:', err?.message);
     }
 
+    const isDind = (lab.dockerImage && lab.dockerImage.includes('dind')) || (lab.slug && lab.slug.includes('dind'));
+
+    let containerCommand: string[] | undefined;
+    if (lab.startupCommand && lab.startupCommand !== '/bin/sh' && lab.startupCommand !== '/bin/bash') {
+      containerCommand = ['/bin/sh', '-c', lab.startupCommand];
+    } else if (isDind) {
+      containerCommand = undefined; // Allow dockerd-entrypoint.sh image entrypoint to run
+    } else if (lab.startupCommand === '/bin/bash') {
+      containerCommand = ['/bin/bash'];
+    } else if (lab.startupCommand === '/bin/sh') {
+      containerCommand = ['/bin/sh'];
+    } else {
+      containerCommand = ['/bin/bash'];
+    }
+
+    const securityContext: k8s.V1SecurityContext = isDind
+      ? { privileged: true, allowPrivilegeEscalation: true, readOnlyRootFilesystem: false }
+      : { allowPrivilegeEscalation: false, readOnlyRootFilesystem: false };
+
     // 3. Create Pod Spec
     const podSpec: k8s.V1Pod = {
       metadata: {
@@ -121,7 +140,7 @@ export class LabProvisionerService {
           {
             name: 'lab-container',
             image: lab.dockerImage || 'ubuntu:latest',
-            command: lab.startupCommand ? ['/bin/sh', '-c', lab.startupCommand] : ['/bin/bash'],
+            ...(containerCommand ? { command: containerCommand } : {}),
             ports: [
               {
                 containerPort: 22,
@@ -141,10 +160,7 @@ export class LabProvisionerService {
                 memory: lab.memoryLimit || '1Gi',
               },
             },
-            securityContext: {
-              allowPrivilegeEscalation: false,
-              readOnlyRootFilesystem: false,
-            },
+            securityContext,
           },
         ],
         restartPolicy: 'Never',

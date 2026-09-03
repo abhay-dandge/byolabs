@@ -105,12 +105,12 @@
       "category": "Docker",
       "difficulty": "Intermediate",
       "durationMinutes": 60,
-      "dockerImage": "ubuntu:latest",
+      "dockerImage": "docker:dind",
       "cpuRequest": "500m",
       "cpuLimit": "1",
       "memoryRequest": "512Mi",
       "memoryLimit": "1Gi",
-      "startupCommand": "/bin/sh",
+      "startupCommand": "",
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
@@ -121,8 +121,38 @@
         {
           "id": "task-docker-1",
           "title": "Verify Alpine Environment",
-          "description": "Verify your Alpine container container environment with `cat /etc/alpine-release`.",
-          "validationScript": "test -f /etc/alpine-release"
+          "description": "Verify your container environment with `cat /etc/os-release` or docker daemon.",
+          "validationScript": "test -f /etc/alpine-release || test -f /etc/os-release"
+        }
+      ]
+    },
+    {
+      "id": "lab-docker-dind",
+      "slug": "docker-dind-lab",
+      "name": "Docker-in-Docker (DinD) & Image Management",
+      "description": "Interactive container lab running official Docker-in-Docker (docker:dind) image to pull Docker images, manage container layers, and run sub-containers.",
+      "category": "Docker",
+      "difficulty": "Intermediate",
+      "durationMinutes": 60,
+      "dockerImage": "docker:dind",
+      "cpuRequest": "500m",
+      "cpuLimit": "1",
+      "memoryRequest": "512Mi",
+      "memoryLimit": "1Gi",
+      "storage": "1Gi",
+      "startupCommand": "",
+      "terminalEnabled": true,
+      "browserAccess": true,
+      "isPublished": true,
+      "createdAt": "2026-08-17T06:35:58.649Z",
+      "updatedAt": "2026-08-17T06:35:58.649Z",
+      "instructionsMarkdown": "\n# Docker-in-Docker (DinD) & Container Operations\n\nWelcome to your **Docker-in-Docker (`docker:dind`)** interactive lab environment!\n\n## Guided Steps\n\n### Step 1: Pull Docker Image\n```bash\ndocker pull docker\n```\n",
+      "tasks": [
+        {
+          "id": "task-dind-1",
+          "title": "1. Pull Official Docker Image (docker pull docker)",
+          "description": "Execute `docker pull docker` in the terminal.",
+          "validationScript": "docker image inspect docker >/dev/null 2>&1 || docker images | grep -q \"docker\""
         }
       ]
     },

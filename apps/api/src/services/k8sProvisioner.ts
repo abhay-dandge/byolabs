@@ -96,11 +96,11 @@ export class LabProvisionerService {
       metadata: { name: 'lab-quota', namespace },
       spec: {
         hard: {
-          pods: '4',
-          'requests.cpu': isSidecarDind ? '500m' : (lab.cpuRequest || '250m'),
-          'requests.memory': isSidecarDind ? '512Mi' : (lab.memoryRequest || '256Mi'),
-          'limits.cpu': isSidecarDind ? '2' : (lab.cpuLimit || '1'),
-          'limits.memory': isSidecarDind ? '2Gi' : (lab.memoryLimit || '1Gi'),
+          pods: '6',
+          'requests.cpu': isSidecarDind ? '1' : (lab.cpuRequest || '250m'),
+          'requests.memory': isSidecarDind ? '2Gi' : (lab.memoryRequest || '256Mi'),
+          'limits.cpu': isSidecarDind ? '4' : (lab.cpuLimit || '1'),
+          'limits.memory': isSidecarDind ? '4Gi' : (lab.memoryLimit || '1Gi'),
         },
       },
     };

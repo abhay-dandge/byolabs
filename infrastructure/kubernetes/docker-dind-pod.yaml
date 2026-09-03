@@ -1,41 +1,35 @@
 # ==============================================================================
-# BYOLabs.in — Rootless Docker Playground Pod Specification (GKE Autopilot Native)
-# Description: Multi-container Pod spec running Docker Daemon inside user namespace (UID 1000)
-#              without requiring privileged mode (securityContext.privileged: false).
-#              Communicates via shared Unix socket at unix:///run/user/1000/docker.sock
+# BYOLabs.in — Official GKE Autopilot DinD Pod Specification (gVisor Sandbox)
+# Description: Official GKE Autopilot template for running nested Docker containers (DinD)
+#              using GKE Sandbox (gVisor) annotation and SETUID/SETGID capabilities.
+#              Satisfies GKE Warden security rules (privileged: false).
 # ==============================================================================
 apiVersion: v1
 kind: Pod
 metadata:
-  name: rootless-dind
+  name: dind-gvisor
+  annotations:
+    container.apps.gke.io/sandbox: gvisor
   labels:
-    app: rootless-dind
+    app: dind-gvisor
 spec:
-  securityContext:
-    # Rootless DinD uses UID/GID 1000 (non-root) internally
-    runAsUser: 1000
-    runAsGroup: 1000
-    fsGroup: 1000
   containers:
-    # 1. The Rootless Docker Daemon (Server)
+    # 1. The Docker Daemon Container (Server running in gVisor Sandbox)
     - name: dind-daemon
-      image: docker:dind-rootless
+      image: docker:27-dind
       securityContext:
-        allowPrivilegeEscalation: true
-        readOnlyRootFilesystem: false
         privileged: false
-        seccompProfile:
-          type: Unconfined
+        allowPrivilegeEscalation: false
+        capabilities:
+          add:
+            - SETUID
+            - SETGID
       env:
         - name: DOCKER_TLS_CERTDIR
           value: "" # Disabling TLS since we communicate locally over a unix socket
-        - name: DOCKERD_ROOTLESS_ROOTLESSKIT_FLAGS
-          value: "--net=slirp4netns --disable-host-loopback"
       volumeMounts:
         - name: docker-socket
-          mountPath: /run/user/1000
-        - name: docker-storage
-          mountPath: /home/rootless/.local/share/docker
+          mountPath: /var/run
       resources:
         requests:
           cpu: "250m"
@@ -49,12 +43,11 @@ spec:
       image: docker:latest
       command: ["sleep", "infinity"]
       env:
-        # Point the CLI to the shared rootless Unix socket
         - name: DOCKER_HOST
-          value: unix:///run/user/1000/docker.sock
+          value: unix:///var/run/docker.sock
       volumeMounts:
         - name: docker-socket
-          mountPath: /run/user/1000
+          mountPath: /var/run
       stdin: true
       tty: true
       resources:
@@ -68,8 +61,5 @@ spec:
   volumes:
     # Shared memory volume for the Docker socket
     - name: docker-socket
-      emptyDir: {}
-    # Ephemeral volume to hold images/layers inside the pod
-    - name: docker-storage
       emptyDir: {}
   restartPolicy: Never

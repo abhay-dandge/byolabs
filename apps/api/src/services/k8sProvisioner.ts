@@ -137,37 +137,34 @@ export class LabProvisionerService {
         metadata: {
           name: podName,
           namespace,
+          annotations: {
+            'container.apps.gke.io/sandbox': 'gvisor',
+          },
           labels: {
-            app: 'rootless-dind',
+            app: 'dind-gvisor',
             'session-id': session.id,
             'user-id': session.userId,
             'lab-type': lab.slug,
           },
         },
         spec: {
-          securityContext: {
-            runAsUser: 1000,
-            runAsGroup: 1000,
-            fsGroup: 1000,
-          },
           containers: [
-            // 1. The Rootless Docker Daemon (Server)
+            // 1. The Docker Daemon Container (Server running inside gVisor Sandbox)
             {
               name: 'dind-daemon',
-              image: 'docker:dind-rootless',
+              image: 'docker:27-dind',
               securityContext: {
-                allowPrivilegeEscalation: true,
-                readOnlyRootFilesystem: false,
                 privileged: false,
-                seccompProfile: { type: 'Unconfined' },
+                allowPrivilegeEscalation: false,
+                capabilities: {
+                  add: ['SETUID', 'SETGID'],
+                },
               },
               env: [
                 { name: 'DOCKER_TLS_CERTDIR', value: '' }, // Unix socket communication
-                { name: 'DOCKERD_ROOTLESS_ROOTLESSKIT_FLAGS', value: '--net=slirp4netns --disable-host-loopback' },
               ],
               volumeMounts: [
-                { name: 'docker-socket', mountPath: '/run/user/1000' },
-                { name: 'docker-storage', mountPath: '/home/rootless/.local/share/docker' },
+                { name: 'docker-socket', mountPath: '/var/run' },
               ],
               resources: {
                 requests: { cpu: '250m', memory: '512Mi' },
@@ -180,10 +177,10 @@ export class LabProvisionerService {
               image: 'docker:latest',
               command: ['sleep', 'infinity'],
               env: [
-                { name: 'DOCKER_HOST', value: 'unix:///run/user/1000/docker.sock' },
+                { name: 'DOCKER_HOST', value: 'unix:///var/run/docker.sock' },
               ],
               volumeMounts: [
-                { name: 'docker-socket', mountPath: '/run/user/1000' },
+                { name: 'docker-socket', mountPath: '/var/run' },
               ],
               stdin: true,
               tty: true,
@@ -195,7 +192,6 @@ export class LabProvisionerService {
           ],
           volumes: [
             { name: 'docker-socket', emptyDir: {} },
-            { name: 'docker-storage', emptyDir: {} },
           ],
           restartPolicy: 'Never',
         },

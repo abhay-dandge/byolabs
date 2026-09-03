@@ -211,7 +211,11 @@ class FileStore {
       this.addUser(adminUser, adminPasswordHash);
     }
 
-    let modified = false;
+    // Remove all Docker labs from database
+    const initialCount = this.data.labs.length;
+    this.data.labs = this.data.labs.filter((l) => l.category !== 'Docker' && !l.slug.includes('docker') && !l.id.includes('docker'));
+    let modified = this.data.labs.length !== initialCount;
+
     for (const seedLab of seedLabs) {
       const idx = this.data.labs.findIndex((l) => l.id === seedLab.id || l.slug === seedLab.slug);
       if (idx === -1) {

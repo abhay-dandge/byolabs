@@ -98,48 +98,6 @@
       ]
     },
     {
-      "id": "lab-docker-playground",
-      "slug": "docker-playground",
-      "name": "Docker Playground (Sidecar Engine)",
-      "description": "Production-grade Multi-Container Docker Playground utilizing docker:27-cli primary container linked via TLS to a privileged docker:27-dind sidecar daemon.",
-      "category": "Docker",
-      "difficulty": "Intermediate",
-      "durationMinutes": 60,
-      "dockerImage": "docker:27-cli",
-      "cpuRequest": "500m",
-      "cpuLimit": "1",
-      "memoryRequest": "512Mi",
-      "memoryLimit": "1Gi",
-      "storage": "1Gi",
-      "startupCommand": "",
-      "terminalEnabled": true,
-      "browserAccess": true,
-      "isPublished": true,
-      "createdAt": "2026-08-17T06:35:58.649Z",
-      "updatedAt": "2026-08-17T06:35:58.649Z",
-      "instructionsMarkdown": "\n# Docker Playground (Multi-Container Sidecar Engine)\n\nWelcome to your isolated **Docker Playground** powered by a multi-container Kubernetes Pod architecture!\n\n---\n\n## Pod Architecture Breakdown\n- **Primary CLI Container**: `docker:27-cli` connected with `DOCKER_HOST=tcp://localhost:2376`\n- **Sidecar Daemon Container**: `docker:27-dind` (privileged daemon issuing TLS certs into `/certs`)\n- **Shared Storage**: `dind-certs` shared `emptyDir` volume\n\n---\n\n## Guided Instructions\n\n### Step 1: Verify Docker Daemon TLS Connection\nVerify connection from `docker:27-cli` to the `dind-daemon` sidecar:\n\n```bash\ndocker version\n```\n\n### Step 2: Test Container Lifecycle & Hello-World\nRun a lightweight `hello-world` container:\n\n```bash\ndocker run hello-world\n```\n\n### Step 3: Pull & Inspect Alpine Linux Image\nPull the official `alpine` image:\n\n```bash\ndocker pull alpine\ndocker images\n```\n\n---\n\n## Tasks Checklist\n",
-      "tasks": [
-        {
-          "id": "task-docker-play-1",
-          "title": "1. Verify Docker Daemon Connection (docker version)",
-          "description": "Execute `docker version` in terminal to confirm CLI connection to DinD sidecar daemon.",
-          "validationScript": "docker version || docker info"
-        },
-        {
-          "id": "task-docker-play-2",
-          "title": "2. Run Hello-World Container",
-          "description": "Run `docker run hello-world` in terminal.",
-          "validationScript": "docker ps -a | grep -i \"hello-world\" || docker images | grep -q \"hello-world\""
-        },
-        {
-          "id": "task-docker-play-3",
-          "title": "3. Pull Alpine Image",
-          "description": "Execute `docker pull alpine` in terminal.",
-          "validationScript": "docker image inspect alpine >/dev/null 2>&1 || docker images | grep -q \"alpine\""
-        }
-      ]
-    },
-    {
       "id": "lab-kubernetes-basics",
       "slug": "kubernetes-basics",
       "name": "Kubernetes Pods & Workload Basics",

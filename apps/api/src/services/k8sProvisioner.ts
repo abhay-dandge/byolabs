@@ -240,13 +240,8 @@ export class LabProvisionerService {
 
       // Handle GKE Autopilot / Warden Policy enforcement (disallow-privilege)
       if (isSidecarDind && (detail.includes('disallow-privilege') || detail.includes('privileged') || detail.includes('Warden') || detail.includes('autogke'))) {
-        console.warn(`[K8sProvisioner] Privileged sidecar rejected by GKE Autopilot Warden (${detail}). Retrying with GKE Autopilot-compliant Pod spec...`);
-        db.addLog('warn', 'Provisioner', `GKE Autopilot Warden blocked privileged mode. Provisioning GKE-compliant container for session ${session.id}.`);
-
-        const isDockerLab = lab.category === 'Docker' || lab.slug.includes('docker');
-        const autopilotCmd = isDockerLab
-          ? ['/bin/sh', '-c', 'apt-get update -y >/dev/null 2>&1 && apt-get install -y docker.io curl wget git procps >/dev/null 2>&1 || true; exec /bin/bash']
-          : ['/bin/bash'];
+        console.warn(`[K8sProvisioner] Privileged sidecar rejected by GKE Autopilot Warden (${detail}). Retrying with Rootless Docker DinD (docker:27-dind-rootless)...`);
+        db.addLog('warn', 'Provisioner', `GKE Autopilot Warden blocked privileged mode. Deploying Rootless Docker engine (docker:27-dind-rootless) for session ${session.id}.`);
 
         const autopilotPodSpec: k8s.V1Pod = {
           metadata: {
@@ -262,25 +257,87 @@ export class LabProvisionerService {
           spec: {
             containers: [
               {
-                name: 'lab-container',
-                image: 'ubuntu:latest',
-                command: autopilotCmd,
-                ports: [{ containerPort: 22, name: 'ssh', protocol: 'TCP' }],
+                name: 'docker-cli',
+                image: lab.dockerImage && lab.dockerImage !== 'ubuntu:latest' ? lab.dockerImage : 'docker:27-cli',
+                command: ['tail', '-f', '/dev/null'],
+                env: [
+                  { name: 'DOCKER_HOST', value: 'tcp://localhost:2376' },
+                  { name: 'DOCKER_TLS_VERIFY', value: '1' },
+                  { name: 'DOCKER_CERT_PATH', value: '/certs/client' },
+                ],
+                volumeMounts: [
+                  { name: 'dind-certs', mountPath: '/certs' },
+                ],
                 stdin: true,
                 tty: true,
                 resources: {
                   requests: { cpu: '250m', memory: '256Mi' },
-                  limits: { cpu: '1', memory: '1Gi' },
+                  limits: { cpu: '500m', memory: '512Mi' },
                 },
-                securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: false },
+                securityContext: { allowPrivilegeEscalation: false },
               },
+              {
+                name: 'dind-daemon',
+                image: 'docker:27-dind-rootless',
+                securityContext: {
+                  privileged: false,
+                  allowPrivilegeEscalation: true,
+                  runAsUser: 1000,
+                  runAsGroup: 1000,
+                },
+                env: [
+                  { name: 'DOCKER_TLS_CERTDIR', value: '/certs' },
+                ],
+                volumeMounts: [
+                  { name: 'dind-certs', mountPath: '/certs' },
+                  { name: 'dind-storage', mountPath: '/home/rootless/.local/share/docker' },
+                ],
+                resources: {
+                  requests: { cpu: '250m', memory: '512Mi' },
+                  limits: { cpu: '1', memory: '1.5Gi' },
+                },
+              },
+            ],
+            volumes: [
+              { name: 'dind-certs', emptyDir: {} },
+              { name: 'dind-storage', emptyDir: {} },
             ],
             restartPolicy: 'Never',
           },
         };
 
-        await this.coreV1Api!.createNamespacedPod(namespace, autopilotPodSpec);
-        console.log(`[K8sProvisioner] GKE Autopilot Pod ${podName} created in namespace ${namespace}`);
+        try {
+          await this.coreV1Api!.createNamespacedPod(namespace, autopilotPodSpec);
+          console.log(`[K8sProvisioner] GKE Autopilot Rootless DinD Pod ${podName} created in namespace ${namespace}`);
+        } catch (rootlessErr: any) {
+          const rootlessDetail = rootlessErr?.body?.message || rootlessErr?.message || String(rootlessErr);
+          console.warn(`[K8sProvisioner] Rootless DinD failed (${rootlessDetail}). Deploying Ubuntu GKE container...`);
+          
+          const fallbackUbuntuPod: k8s.V1Pod = {
+            metadata: {
+              name: podName,
+              namespace,
+              labels: { app: 'byolabs-lab', 'session-id': session.id, 'user-id': session.userId, 'lab-type': lab.slug },
+            },
+            spec: {
+              containers: [
+                {
+                  name: 'lab-container',
+                  image: 'ubuntu:latest',
+                  command: ['/bin/sh', '-c', 'apt-get update -y >/dev/null 2>&1 && apt-get install -y docker.io curl wget git procps >/dev/null 2>&1 || true; exec /bin/bash'],
+                  ports: [{ containerPort: 22, name: 'ssh', protocol: 'TCP' }],
+                  stdin: true,
+                  tty: true,
+                  resources: { requests: { cpu: '250m', memory: '256Mi' }, limits: { cpu: '1', memory: '1Gi' } },
+                  securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: false },
+                },
+              ],
+              restartPolicy: 'Never',
+            },
+          };
+          await this.coreV1Api!.createNamespacedPod(namespace, fallbackUbuntuPod);
+          console.log(`[K8sProvisioner] Fallback Ubuntu GKE Pod ${podName} created in namespace ${namespace}`);
+        }
       } else {
         console.error(`[K8sProvisioner] Failed to create Pod ${podName} in namespace ${namespace}:`, detail);
         throw new Error(`Pod creation failed: ${detail}`);

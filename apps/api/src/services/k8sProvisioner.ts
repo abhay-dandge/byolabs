@@ -137,11 +137,8 @@ export class LabProvisionerService {
         metadata: {
           name: podName,
           namespace,
-          annotations: {
-            'container.apps.gke.io/sandbox': 'gvisor',
-          },
           labels: {
-            app: 'dind-gvisor',
+            app: 'docker-lab',
             'session-id': session.id,
             'user-id': session.userId,
             'lab-type': lab.slug,
@@ -149,50 +146,26 @@ export class LabProvisionerService {
         },
         spec: {
           containers: [
-            // 1. The Docker Daemon Container (Server running inside gVisor Sandbox)
-            {
-              name: 'dind-daemon',
-              image: 'docker:27-dind',
-              securityContext: {
-                privileged: false,
-                allowPrivilegeEscalation: true,
-                capabilities: {
-                  add: ['SYS_ADMIN', 'SETUID', 'SETGID', 'MKNOD', 'SYS_RESOURCE'],
-                },
-              },
-              env: [
-                { name: 'DOCKER_TLS_CERTDIR', value: '' }, // Unix socket communication
-                { name: 'DOCKER_DRIVER', value: 'vfs' },
-              ],
-              volumeMounts: [
-                { name: 'docker-socket', mountPath: '/var/run' },
-              ],
-              resources: {
-                requests: { cpu: '250m', memory: '512Mi' },
-                limits: { cpu: '1', memory: '1.5Gi' },
-              },
-            },
-            // 2. The Client Container (Interactive Terminal & Docker CLI Runner)
             {
               name: 'docker-client',
-              image: 'docker:latest',
-              command: ['sleep', 'infinity'],
-              env: [
-                { name: 'DOCKER_HOST', value: 'unix:///var/run/docker.sock' },
+              image: 'ubuntu:24.04',
+              command: [
+                '/bin/bash',
+                '-c',
+                'apt-get update && apt-get install -y curl ca-certificates iptables && curl -fsSL https://get.docker.com | sh && (dockerd > /var/log/dockerd.log 2>&1 &) && sleep infinity',
               ],
-              volumeMounts: [
-                { name: 'docker-socket', mountPath: '/var/run' },
-              ],
+              securityContext: {
+                privileged: true,
+                allowPrivilegeEscalation: true,
+                readOnlyRootFilesystem: false,
+              },
               stdin: true,
               tty: true,
               resources: {
-                requests: { cpu: '250m', memory: '256Mi' },
-                limits: { cpu: '500m', memory: '512Mi' },
+                requests: { cpu: '500m', memory: '1Gi' },
+                limits: { cpu: '2', memory: '2Gi' },
               },
             },
-          ],
-          volumes: [
-            { name: 'docker-socket', emptyDir: {} },
           ],
           restartPolicy: 'Never',
         },

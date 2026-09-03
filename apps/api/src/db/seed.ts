@@ -157,40 +157,40 @@ chmod +x sample.sh
       id: 'lab-docker-playground',
       slug: 'docker-playground',
       name: 'Docker Playground',
-      description: 'Interactive GKE Autopilot-native Docker Playground powered by a dual-container Rootless Docker Engine (docker:dind-rootless + docker:latest) communicating over a shared Unix socket.',
+      description: 'Interactive Docker Playground powered by an Ubuntu 24.04 container. Installs official Docker Engine on startup with full root access.',
       category: 'Docker',
       difficulty: 'Intermediate',
       durationMinutes: 60,
-      dockerImage: 'docker:latest',
+      dockerImage: 'ubuntu:24.04',
       cpuRequest: '500m',
-      cpuLimit: '1',
-      memoryRequest: '512Mi',
-      memoryLimit: '1.5Gi',
-      storage: '1Gi',
-      startupCommand: '',
+      cpuLimit: '2',
+      memoryRequest: '1Gi',
+      memoryLimit: '2Gi',
+      storage: '2Gi',
+      startupCommand: '/bin/bash',
       terminalEnabled: true,
       browserAccess: true,
       isPublished: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       instructionsMarkdown: `
-# Docker Playground (Rootless DinD Engine)
+# Docker Playground (Ubuntu 24.04 Engine)
 
-Welcome to your isolated **Docker Playground** running on a GKE Autopilot-native dual-container Pod spec!
+Welcome to your isolated **Docker Playground** running on **Ubuntu 24.04 LTS**!
 
 ---
 
-## Pod Architecture Breakdown
-- **Daemon Container**: \`docker:dind-rootless\` running \`dockerd-rootless.sh\` (non-root UID 1000, \`privileged: false\`)
-- **Client Container**: \`docker:latest\` connected to the daemon over shared Unix socket \`unix:///run/user/1000/docker.sock\`
-- **Shared Storage**: \`docker-socket\` shared \`emptyDir\` volume
+## Environment Architecture
+- **Operating System**: Ubuntu 24.04 LTS
+- **Docker Engine**: Installed automatically on boot via official \`curl -fsSL https://get.docker.com | sh\` script
+- **Daemon**: \`dockerd\` running natively in background with full container creation capability
 
 ---
 
 ## Guided Exercises
 
-### Step 1: Verify Rootless Docker Daemon Connection
-Verify CLI communication with the Rootless Docker daemon:
+### Step 1: Verify Installed Docker Engine & Daemon
+Verify CLI communication with the Docker daemon:
 
 \`\`\`bash
 docker version

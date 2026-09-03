@@ -20,7 +20,15 @@ export const LabWorkspacePage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const [showCertModal, setShowCertModal] = useState(false);
-  const [startupCountdown, setStartupCountdown] = useState<number>(45);
+  const isDockerLab = lab?.category === 'Docker' || lab?.slug?.includes('docker') || lab?.dockerImage?.includes('docker');
+  const initialCountdown = isDockerLab ? 120 : 30;
+  const [startupCountdown, setStartupCountdown] = useState<number>(120);
+
+  useEffect(() => {
+    if (lab) {
+      setStartupCountdown(isDockerLab ? 120 : 30);
+    }
+  }, [lab?.id]);
 
   const fetchSession = async () => {
     if (!sessionId) return;
@@ -125,7 +133,13 @@ export const LabWorkspacePage: React.FC = () => {
   const isStarting = loading || (session && (session.status === 'CREATING' || session.status === 'STARTING'));
 
   if (isStarting) {
-    const progressPercent = Math.min(100, Math.round(((45 - startupCountdown) / 45) * 100));
+    const elapsed = Math.max(0, initialCountdown - startupCountdown);
+    const progressPercent = Math.min(100, Math.round((elapsed / initialCountdown) * 100));
+
+    const minsLeft = Math.floor(startupCountdown / 60);
+    const secsLeft = startupCountdown % 60;
+    const formattedTimer = `${minsLeft.toString().padStart(2, '0')}:${secsLeft.toString().padStart(2, '0')}`;
+
     return (
       <div className="min-h-[85vh] flex flex-col items-center justify-center p-6 bg-slate-950">
         <div className="max-w-md w-full p-8 rounded-3xl bg-slate-900/90 border border-cyan-500/30 shadow-2xl shadow-cyan-500/10 space-y-6 text-center">
@@ -139,7 +153,11 @@ export const LabWorkspacePage: React.FC = () => {
               {lab?.name || 'Provisioning Lab Workspace'}
             </h2>
             <p className="text-xs text-slate-400 font-mono">
-              Pulling <span className="text-cyan-300 font-semibold">{lab?.dockerImage || 'container image'}</span> & scheduling Kubernetes Pod...
+              {isDockerLab ? (
+                <span>Executing <code className="text-cyan-300 font-semibold">apt update && curl | sh</code> to install Docker...</span>
+              ) : (
+                <span>Scheduling Kubernetes Pod & attaching workspace...</span>
+              )}
             </p>
           </div>
 
@@ -149,7 +167,7 @@ export const LabWorkspacePage: React.FC = () => {
               Estimated Ready In
             </div>
             <div className="text-4xl font-extrabold font-mono text-cyan-400 tracking-wider animate-pulse">
-              00:{startupCountdown.toString().padStart(2, '0')}
+              {formattedTimer}
             </div>
             <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
               <div
@@ -163,16 +181,29 @@ export const LabWorkspacePage: React.FC = () => {
           <div className="text-left space-y-2.5 text-xs font-mono pt-2 border-t border-slate-800">
             <div className="flex items-center space-x-2 text-emerald-400">
               <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-              <span>Isolated namespace & quotas initialized</span>
+              <span>Kubernetes pod created & namespace isolated</span>
             </div>
-            <div className="flex items-center space-x-2 text-cyan-300">
-              <RefreshCw className="w-4 h-4 flex-shrink-0 animate-spin" />
-              <span>Scheduling container Pod & initializing dockerd...</span>
-            </div>
-            <div className="flex items-center space-x-2 text-slate-500">
-              <Clock className="w-4 h-4 flex-shrink-0" />
-              <span>Attaching interactive xterm.js terminal stream</span>
-            </div>
+            {isDockerLab ? (
+              <>
+                <div className={`flex items-center space-x-2 ${elapsed >= 10 ? 'text-emerald-400' : 'text-cyan-300'}`}>
+                  {elapsed >= 10 ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> : <RefreshCw className="w-4 h-4 flex-shrink-0 animate-spin" />}
+                  <span>Updating apt repositories & installing curl</span>
+                </div>
+                <div className={`flex items-center space-x-2 ${elapsed >= 80 ? 'text-emerald-400' : elapsed >= 25 ? 'text-cyan-300' : 'text-slate-500'}`}>
+                  {elapsed >= 80 ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> : elapsed >= 25 ? <RefreshCw className="w-4 h-4 flex-shrink-0 animate-spin" /> : <Clock className="w-4 h-4 flex-shrink-0" />}
+                  <span>Running `curl -fsSL https://get.docker.com | sh`</span>
+                </div>
+                <div className={`flex items-center space-x-2 ${elapsed >= 110 ? 'text-emerald-400' : elapsed >= 80 ? 'text-cyan-300' : 'text-slate-500'}`}>
+                  {elapsed >= 110 ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> : elapsed >= 80 ? <RefreshCw className="w-4 h-4 flex-shrink-0 animate-spin" /> : <Clock className="w-4 h-4 flex-shrink-0" />}
+                  <span>Starting Docker daemon & launching interactive shell</span>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center space-x-2 text-cyan-300">
+                <RefreshCw className="w-4 h-4 flex-shrink-0 animate-spin" />
+                <span>Scheduling container Pod & attaching interactive shell...</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

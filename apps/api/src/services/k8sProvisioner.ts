@@ -243,6 +243,11 @@ export class LabProvisionerService {
         console.warn(`[K8sProvisioner] Privileged sidecar rejected by GKE Autopilot Warden (${detail}). Retrying with GKE Autopilot-compliant Pod spec...`);
         db.addLog('warn', 'Provisioner', `GKE Autopilot Warden blocked privileged mode. Provisioning GKE-compliant container for session ${session.id}.`);
 
+        const isDockerLab = lab.category === 'Docker' || lab.slug.includes('docker');
+        const autopilotCmd = isDockerLab
+          ? ['/bin/sh', '-c', 'apt-get update -y >/dev/null 2>&1 && apt-get install -y docker.io curl wget git procps >/dev/null 2>&1 || true; exec /bin/bash']
+          : ['/bin/bash'];
+
         const autopilotPodSpec: k8s.V1Pod = {
           metadata: {
             name: podName,
@@ -259,7 +264,7 @@ export class LabProvisionerService {
               {
                 name: 'lab-container',
                 image: 'ubuntu:latest',
-                command: ['/bin/bash'],
+                command: autopilotCmd,
                 ports: [{ containerPort: 22, name: 'ssh', protocol: 'TCP' }],
                 stdin: true,
                 tty: true,

@@ -57,6 +57,8 @@ export class LabProvisionerService {
     }
 
     // Fallback: Sandbox mode
+    session.isSandbox = true;
+    db.updateSession(session);
     await this.provisionSandboxLab(session, lab);
   }
 
@@ -198,9 +200,9 @@ export class LabProvisionerService {
       console.warn('[K8sProvisioner] Service creation warning:', err?.message);
     }
 
-    // Wait for Pod Ready (poll up to 30s)
+    // Wait for Pod Ready (poll up to 90s for image pulling)
     let isReady = false;
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 90; i++) {
       await new Promise((r) => setTimeout(r, 1000));
       const podRes = await this.coreV1Api!.readNamespacedPod(podName, namespace);
       const phase = podRes.body?.status?.phase;

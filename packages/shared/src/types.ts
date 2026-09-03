@@ -84,6 +84,7 @@ export interface LabSession {
   expiresAt?: string;
   lastActivityAt?: string;
   completedTasks: string[];
+  isSandbox?: boolean;
 }
 
 export interface NodeMetrics {

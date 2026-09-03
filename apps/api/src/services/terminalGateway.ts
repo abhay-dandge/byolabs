@@ -76,7 +76,7 @@ export function setupTerminalGateway(server: Server) {
     const isK8s = k8sProvisioner.getIsK8sAvailable();
     const kc = k8sProvisioner.getKubeConfig();
 
-    if (isK8s && kc) {
+    if (isK8s && kc && !session.isSandbox) {
       // 1. Try Native Kubernetes API Exec stream using @kubernetes/client-node
       try {
         console.log(`[TerminalGateway] Attempting native K8s API Exec for session ${session.id}...`);
@@ -124,10 +124,10 @@ function connectKubectlExecStream(ws: WebSocket, session: any): Promise<boolean>
     proc.stderr.on('data', (data) => {
       const errStr = data.toString();
       if (errStr.includes('Unable to use a TTY')) return; // Ignore harmless TTY warning
-      if (!connected && (errStr.includes('exec failed') || errStr.includes('no such file'))) {
+      if (!connected && (errStr.includes('NotFound') || errStr.includes('not found') || errStr.includes('exec failed') || errStr.includes('no such file'))) {
         proc.kill();
-        // Fallback to /bin/sh
-        connectKubectlShStream(ws, session).then(resolve);
+        // Resolve false to trigger fallback
+        resolve(false);
         return;
       }
       try { ws.send(errStr); } catch (e) {}

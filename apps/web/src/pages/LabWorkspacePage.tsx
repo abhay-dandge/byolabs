@@ -20,6 +20,7 @@ export const LabWorkspacePage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const [showCertModal, setShowCertModal] = useState(false);
+  const [startupCountdown, setStartupCountdown] = useState<number>(45);
 
   const fetchSession = async () => {
     if (!sessionId) return;
@@ -37,6 +38,23 @@ export const LabWorkspacePage: React.FC = () => {
   useEffect(() => {
     fetchSession();
   }, [sessionId]);
+
+  useEffect(() => {
+    if (!session || session.status === 'RUNNING' || session.status === 'EXPIRED' || session.status === 'STOPPED') return;
+
+    // Poll session status every 2s until RUNNING
+    const pollInterval = setInterval(fetchSession, 2000);
+    return () => clearInterval(pollInterval);
+  }, [session?.status, sessionId]);
+
+  useEffect(() => {
+    if (session && session.status !== 'RUNNING') {
+      const timer = setInterval(() => {
+        setStartupCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [session?.status]);
 
   useEffect(() => {
     if (!session) return;
@@ -104,13 +122,59 @@ export const LabWorkspacePage: React.FC = () => {
     }
   };
 
-  if (loading) {
+  const isStarting = loading || (session && (session.status === 'CREATING' || session.status === 'STARTING'));
+
+  if (isStarting) {
+    const progressPercent = Math.min(100, Math.round(((45 - startupCountdown) / 45) * 100));
     return (
-      <div className="min-h-[85vh] flex flex-col items-center justify-center space-y-4">
-        <div className="w-12 h-12 rounded-xl bg-cyan-950 border border-cyan-800 flex items-center justify-center animate-spin">
-          <RefreshCw className="w-6 h-6 text-cyan-400" />
+      <div className="min-h-[85vh] flex flex-col items-center justify-center p-6 bg-slate-950">
+        <div className="max-w-md w-full p-8 rounded-3xl bg-slate-900/90 border border-cyan-500/30 shadow-2xl shadow-cyan-500/10 space-y-6 text-center">
+          <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
+            <div className="absolute inset-0 rounded-full border-4 border-cyan-500/20 border-t-cyan-400 animate-spin"></div>
+            <Terminal className="w-8 h-8 text-cyan-400" />
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-white tracking-wide">
+              {lab?.name || 'Provisioning Lab Workspace'}
+            </h2>
+            <p className="text-xs text-slate-400 font-mono">
+              Pulling <span className="text-cyan-300 font-semibold">{lab?.dockerImage || 'container image'}</span> & scheduling Kubernetes Pod...
+            </p>
+          </div>
+
+          {/* Reverse Countdown Display */}
+          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+            <div className="text-xs uppercase font-mono tracking-widest text-slate-400">
+              Estimated Ready In
+            </div>
+            <div className="text-4xl font-extrabold font-mono text-cyan-400 tracking-wider animate-pulse">
+              00:{startupCountdown.toString().padStart(2, '0')}
+            </div>
+            <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+              <div
+                className="bg-gradient-to-r from-cyan-500 to-indigo-500 h-full transition-all duration-1000 ease-out"
+                style={{ width: `${progressPercent}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Step Progress Checklist */}
+          <div className="text-left space-y-2.5 text-xs font-mono pt-2 border-t border-slate-800">
+            <div className="flex items-center space-x-2 text-emerald-400">
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+              <span>Isolated namespace & quotas initialized</span>
+            </div>
+            <div className="flex items-center space-x-2 text-cyan-300">
+              <RefreshCw className="w-4 h-4 flex-shrink-0 animate-spin" />
+              <span>Scheduling container Pod & initializing dockerd...</span>
+            </div>
+            <div className="flex items-center space-x-2 text-slate-500">
+              <Clock className="w-4 h-4 flex-shrink-0" />
+              <span>Attaching interactive xterm.js terminal stream</span>
+            </div>
+          </div>
         </div>
-        <p className="text-slate-300 font-mono text-sm">Provisioning & attaching to Kubernetes Pod...</p>
       </div>
     );
   }

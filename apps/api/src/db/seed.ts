@@ -237,6 +237,175 @@ docker images
       ],
     },
     {
+      id: 'lab-docker-containers',
+      slug: 'docker-containers',
+      name: 'Docker Container Operations & Image Building',
+      description: 'Learn container execution, environment injection, port mapping, container logs, and building custom images using Dockerfile in DinD environment.',
+      category: 'Docker',
+      difficulty: 'Beginner',
+      durationMinutes: 60,
+      dockerImage: 'docker:27-cli',
+      cpuRequest: '500m',
+      cpuLimit: '1',
+      memoryRequest: '512Mi',
+      memoryLimit: '1Gi',
+      storage: '1Gi',
+      startupCommand: '',
+      terminalEnabled: true,
+      browserAccess: true,
+      isPublished: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      instructionsMarkdown: `
+# Docker Container Operations & Image Building
+
+Master essential Docker CLI commands for container lifecycle management and image creation using Dockerfile.
+
+---
+
+## Architecture Context
+This lab runs on a **Docker DinD (Docker-in-Docker)** dual-container Pod spec:
+- \`docker-cli\` (Container 1): Connects to the local daemon via TLS port 2376
+- \`dind-daemon\` (Container 2): Privileged Docker daemon managing container runtimes and storage drivers
+
+---
+
+## Guided Exercises
+
+### Step 1: Run Nginx Webserver Container
+Run a detached Nginx container named \`my-webserver\` mapping port 8080 to 80:
+
+\`\`\`bash
+docker run -d --name my-webserver -p 8080:80 nginx:alpine
+docker ps
+\`\`\`
+
+### Step 2: Test Webserver HTTP Endpoint
+Verify webserver output using \`curl\`:
+
+\`\`\`bash
+curl http://localhost:8080
+\`\`\`
+
+### Step 3: Build Custom Docker Image
+Create a custom Dockerfile and build an image named \`custom-app:v1\`:
+
+\`\`\`bash
+mkdir -p ~/myapp && cd ~/myapp
+cat << 'EOF' > Dockerfile
+FROM alpine:latest
+RUN apk add --no-cache curl
+CMD ["echo", "BYOLabs Docker DinD Engine Active!"]
+EOF
+
+docker build -t custom-app:v1 .
+docker images | grep custom-app
+\`\`\`
+
+---
+
+## Tasks Checklist
+      `,
+      tasks: [
+        {
+          id: 'task-container-1',
+          title: '1. Launch Nginx Webserver Container',
+          description: 'Run container named `my-webserver` using image `nginx:alpine`.',
+          validationScript: 'docker ps -a | grep -q "my-webserver"',
+        },
+        {
+          id: 'task-container-2',
+          title: '2. Create custom Dockerfile',
+          description: 'Create a Dockerfile inside directory `~/myapp`.',
+          validationScript: 'test -f ~/myapp/Dockerfile || test -f /root/myapp/Dockerfile',
+        },
+        {
+          id: 'task-container-3',
+          title: '3. Build custom-app:v1 image',
+          description: 'Build a Docker image tagged `custom-app:v1`.',
+          validationScript: 'docker image inspect custom-app:v1 >/dev/null 2>&1',
+        },
+      ],
+    },
+    {
+      id: 'lab-docker-volumes-networks',
+      slug: 'docker-volumes-networks',
+      name: 'Docker Storage Volumes & Custom Networks',
+      description: 'Configure persistent Docker named volumes, custom bridge networks, and multi-container communication.',
+      category: 'Docker',
+      difficulty: 'Intermediate',
+      durationMinutes: 60,
+      dockerImage: 'docker:27-cli',
+      cpuRequest: '500m',
+      cpuLimit: '1',
+      memoryRequest: '512Mi',
+      memoryLimit: '1Gi',
+      storage: '1Gi',
+      startupCommand: '',
+      terminalEnabled: true,
+      browserAccess: true,
+      isPublished: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      instructionsMarkdown: `
+# Docker Storage Volumes & Custom Networks
+
+Learn how to isolate container network traffic and persist container data using named Docker volumes.
+
+---
+
+## Guided Exercises
+
+### Step 1: Create Docker Volume
+Create a named persistent volume named \`app-data\`:
+
+\`\`\`bash
+docker volume create app-data
+docker volume ls
+\`\`\`
+
+### Step 2: Create Custom Bridge Network
+Create an isolated bridge network named \`backend-net\`:
+
+\`\`\`bash
+docker network create backend-net
+docker network ls
+\`\`\`
+
+### Step 3: Attach Container to Volume and Network
+Launch Redis container attached to network \`backend-net\` and volume \`app-data\`:
+
+\`\`\`bash
+docker run -d --name redis-db --net backend-net -v app-data:/data redis:alpine
+docker ps
+\`\`\`
+
+---
+
+## Tasks Checklist
+      `,
+      tasks: [
+        {
+          id: 'task-vol-net-1',
+          title: '1. Create Named Volume app-data',
+          description: 'Execute `docker volume create app-data`.',
+          validationScript: 'docker volume inspect app-data >/dev/null 2>&1',
+        },
+        {
+          id: 'task-vol-net-2',
+          title: '2. Create Bridge Network backend-net',
+          description: 'Execute `docker network create backend-net`.',
+          validationScript: 'docker network inspect backend-net >/dev/null 2>&1',
+        },
+        {
+          id: 'task-vol-net-3',
+          title: '3. Run Redis container attached to network and volume',
+          description: 'Launch a container named `redis-db` using image `redis:alpine` attached to `backend-net` and volume `app-data`.',
+          validationScript: 'docker ps -a | grep -q "redis-db"',
+        },
+      ],
+    },
+    {
       id: 'lab-kubernetes-basics',
       slug: 'kubernetes-basics',
       name: 'Kubernetes Pods & Workload Basics',

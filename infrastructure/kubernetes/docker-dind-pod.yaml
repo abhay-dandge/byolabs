@@ -1,0 +1,63 @@
+# ==============================================================================
+# BYOLabs.in — Docker-in-Docker (DinD) Multi-Container Sidecar Pod Specification
+# Description: Multi-container Kubernetes Pod template for interactive Docker labs.
+#              - Container 1: docker:27-cli (interactive terminal runner)
+#              - Container 2: docker:27-dind (privileged Docker daemon sidecar)
+#              - Shared Volume: dind-certs (shared TLS certificate directory)
+# ==============================================================================
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dind-sidecar-lab
+  labels:
+    app: byolabs-lab
+    lab-type: docker-playground
+spec:
+  containers:
+  # Container 1: Application / Interactive CLI Runner
+  - name: docker-cli
+    image: docker:27-cli
+    command: ["/bin/sh", "-c", "while [ ! -f /certs/client/ca.pem ]; do sleep 1; done; exec sh"]
+    env:
+    - name: DOCKER_HOST
+      value: tcp://localhost:2376
+    - name: DOCKER_TLS_VERIFY
+      value: "1"
+    - name: DOCKER_CERT_PATH
+      value: /certs/client
+    volumeMounts:
+    - name: dind-certs
+      mountPath: /certs
+    stdin: true
+    tty: true
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "256Mi"
+      limits:
+        cpu: "1"
+        memory: "1Gi"
+
+  # Container 2: The Docker Daemon (Sidecar)
+  - name: dind-daemon
+    image: docker:27-dind
+    securityContext:
+      privileged: true # Required for DinD to mount filesystems
+    env:
+    - name: DOCKER_TLS_CERTDIR
+      value: /certs
+    volumeMounts:
+    - name: dind-certs
+      mountPath: /certs
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "256Mi"
+      limits:
+        cpu: "1"
+        memory: "1Gi"
+
+  volumes:
+  - name: dind-certs
+    emptyDir: {}
+  restartPolicy: Never

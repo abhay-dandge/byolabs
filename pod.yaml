@@ -1,20 +1,37 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: lab-user123
-  labels:
-    app: byolabs
-    user: user123
+  name: dind-sidecar-example
 spec:
   containers:
-    - name: ubuntu
-      image: ubuntu:latest
-      ports:
-        - containerPort: 22
-      resources:
-        requests:
-          cpu: "250m"
-          memory: "256Mi"
-        limits:
-          cpu: "1"
-          memory: "1Gi"
+  # Container 1: Application / CI Runner CLI
+  - name: docker-cli
+    image: docker:27-cli
+    command: ["tail", "-f", "/dev/null"] # Keeps the container alive
+    env:
+    - name: DOCKER_HOST
+      value: tcp://localhost:2376
+    - name: DOCKER_TLS_VERIFY
+      value: "1"
+    - name: DOCKER_CERT_PATH
+      value: /certs/client
+    volumeMounts:
+    - name: dind-certs
+      mountPath: /certs
+
+  # Container 2: The Docker Daemon (Sidecar)
+  - name: dind-daemon
+    image: docker:27-dind
+    securityContext:
+      privileged: true # Required for DinD to mount filesystems
+    env:
+    - name: DOCKER_TLS_CERTDIR
+      value: /certs
+    volumeMounts:
+    - name: dind-certs
+      mountPath: /certs
+
+  volumes:
+  - name: dind-certs
+    emptyDir: {}
+

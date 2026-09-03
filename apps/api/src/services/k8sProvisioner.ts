@@ -125,7 +125,7 @@ export class LabProvisionerService {
       ? { privileged: true, allowPrivilegeEscalation: true, readOnlyRootFilesystem: false }
       : { allowPrivilegeEscalation: false, readOnlyRootFilesystem: false };
 
-    const isSidecarDind = lab.slug === 'docker-playground' || lab.dockerImage === 'docker:27-cli';
+    const isSidecarDind = lab.category === 'Docker' || lab.slug === 'docker-playground' || lab.dockerImage === 'docker:27-cli' || lab.slug.includes('docker');
 
     // 3. Create Pod Spec
     let podSpec: k8s.V1Pod;
@@ -145,9 +145,9 @@ export class LabProvisionerService {
         spec: {
           containers: [
             {
-              name: 'lab-container',
-              image: 'docker:27-cli',
-              command: ['/bin/sh', '-c', 'while [ ! -f /certs/client/ca.pem ]; do sleep 1; done; sh'],
+              name: 'docker-cli',
+              image: lab.dockerImage && lab.dockerImage !== 'ubuntu:latest' ? lab.dockerImage : 'docker:27-cli',
+              command: ['/bin/sh', '-c', 'while [ ! -f /certs/client/ca.pem ]; do sleep 1; done; exec sh'],
               env: [
                 { name: 'DOCKER_HOST', value: 'tcp://localhost:2376' },
                 { name: 'DOCKER_TLS_VERIFY', value: '1' },

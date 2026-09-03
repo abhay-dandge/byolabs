@@ -87,16 +87,18 @@ export class LabProvisionerService {
       }
     }
 
-    // 2. Create ResourceQuota in namespace
+    const isSidecarDind = lab.category === 'Docker' || lab.slug === 'docker-playground' || lab.dockerImage === 'docker:27-cli';
+
+    // 2. Create ResourceQuota in namespace (account for multi-container DinD sidecar total limits)
     const quotaSpec: k8s.V1ResourceQuota = {
       metadata: { name: 'lab-quota', namespace },
       spec: {
         hard: {
-          pods: '2',
-          'requests.cpu': lab.cpuLimit || '1',
-          'requests.memory': lab.memoryLimit || '1Gi',
-          'limits.cpu': lab.cpuLimit || '1',
-          'limits.memory': lab.memoryLimit || '1Gi',
+          pods: '4',
+          'requests.cpu': isSidecarDind ? '500m' : (lab.cpuRequest || '250m'),
+          'requests.memory': isSidecarDind ? '512Mi' : (lab.memoryRequest || '256Mi'),
+          'limits.cpu': isSidecarDind ? '2' : (lab.cpuLimit || '1'),
+          'limits.memory': isSidecarDind ? '2Gi' : (lab.memoryLimit || '1Gi'),
         },
       },
     };
@@ -125,8 +127,6 @@ export class LabProvisionerService {
       ? { privileged: true, allowPrivilegeEscalation: true, readOnlyRootFilesystem: false }
       : { allowPrivilegeEscalation: false, readOnlyRootFilesystem: false };
 
-    const isSidecarDind = lab.category === 'Docker' || lab.slug === 'docker-playground' || lab.dockerImage === 'docker:27-cli' || lab.slug.includes('docker');
-
     // 3. Create Pod Spec
     let podSpec: k8s.V1Pod;
 
@@ -147,7 +147,7 @@ export class LabProvisionerService {
             {
               name: 'docker-cli',
               image: lab.dockerImage && lab.dockerImage !== 'ubuntu:latest' ? lab.dockerImage : 'docker:27-cli',
-              command: ['/bin/sh', '-c', 'while [ ! -f /certs/client/ca.pem ]; do sleep 1; done; exec sh'],
+              command: ['tail', '-f', '/dev/null'], // Keeps container alive while DinD daemon boots
               env: [
                 { name: 'DOCKER_HOST', value: 'tcp://localhost:2376' },
                 { name: 'DOCKER_TLS_VERIFY', value: '1' },
@@ -159,8 +159,8 @@ export class LabProvisionerService {
               stdin: true,
               tty: true,
               resources: {
-                requests: { cpu: lab.cpuRequest || '250m', memory: lab.memoryRequest || '256Mi' },
-                limits: { cpu: lab.cpuLimit || '1', memory: lab.memoryLimit || '1Gi' },
+                requests: { cpu: '250m', memory: '256Mi' },
+                limits: { cpu: '500m', memory: '512Mi' },
               },
             },
             {

@@ -364,6 +364,9 @@ function connectSandboxShell(ws: WebSocket, session: any) {
   ws.send(`\r\n\x1b[36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1b[0m\r\n`);
   ws.send(`\x1b[1;32m BYOLabs.in — Isolated Interactive Environment\x1b[0m\r\n`);
   ws.send(`\x1b[90m Lab ID:\x1b[0m \x1b[33m${session.id}\x1b[0m  |  \x1b[90mNamespace:\x1b[0m \x1b[34m${session.namespace}\x1b[0m  |  \x1b[90mPod:\x1b[0m \x1b[35m${session.podName}\x1b[0m\r\n`);
+  if (session.errorMessage) {
+    ws.send(`\x1b[33m ⚠️  K8s Note: Pod scheduling failed (${session.errorMessage}). Operating in Sandbox mode.\x1b[0m\r\n`);
+  }
   ws.send(`\x1b[36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1b[0m\r\n\r\n`);
 
   try {

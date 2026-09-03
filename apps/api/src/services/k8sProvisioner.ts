@@ -51,8 +51,10 @@ export class LabProvisionerService {
         await this.provisionK8sLab(session, lab);
         return;
       } catch (err: any) {
-        console.error('[K8sProvisioner] K8s API provisioning failed, falling back to Sandbox runner:', err?.message || err);
-        db.addLog('warn', 'Provisioner', `K8s cluster provisioning attempt failed (${err?.message}). Operating session ${session.id} in sandbox fallback mode.`);
+        const errorMsg = err?.body?.message || err?.message || String(err);
+        console.error(`[K8sProvisioner] K8s API provisioning failed for session ${session.id}:`, errorMsg);
+        db.addLog('warn', 'Provisioner', `K8s cluster provisioning attempt failed: ${errorMsg}. Operating session ${session.id} in sandbox fallback mode.`);
+        session.errorMessage = errorMsg;
       }
     }
 
@@ -230,8 +232,14 @@ export class LabProvisionerService {
       };
     }
 
-    await this.coreV1Api!.createNamespacedPod(namespace, podSpec);
-    console.log(`[K8sProvisioner] Pod ${podName} created in namespace ${namespace}`);
+    try {
+      await this.coreV1Api!.createNamespacedPod(namespace, podSpec);
+      console.log(`[K8sProvisioner] Pod ${podName} created in namespace ${namespace}`);
+    } catch (err: any) {
+      const detail = err?.body?.message || err?.message || String(err);
+      console.error(`[K8sProvisioner] Failed to create Pod ${podName} in namespace ${namespace}:`, detail);
+      throw new Error(`Pod creation failed: ${detail}`);
+    }
 
     // 4. Create Kubernetes Service mapping Port 22
     const serviceSpec: k8s.V1Service = {
@@ -263,18 +271,24 @@ export class LabProvisionerService {
 
     // Wait for Pod Ready (poll up to 90s for image pulling)
     let isReady = false;
+    let lastPhase = 'Unknown';
     for (let i = 0; i < 90; i++) {
       await new Promise((r) => setTimeout(r, 1000));
-      const podRes = await this.coreV1Api!.readNamespacedPod(podName, namespace);
-      const phase = podRes.body?.status?.phase;
-      if (phase === 'Running' || phase === 'Succeeded') {
-        isReady = true;
-        break;
+      try {
+        const podRes = await this.coreV1Api!.readNamespacedPod(podName, namespace);
+        const phase = podRes.body?.status?.phase;
+        lastPhase = phase || 'Unknown';
+        if (phase === 'Running' || phase === 'Succeeded') {
+          isReady = true;
+          break;
+        }
+      } catch (e) {
+        // Ignore transient K8s API read errors while pod initializes
       }
     }
 
     if (!isReady) {
-      throw new Error(`Pod scheduling timed out for ${podName} in namespace ${namespace}`);
+      throw new Error(`Pod scheduling timed out for ${podName} in namespace ${namespace} (Current phase: ${lastPhase})`);
     }
 
     db.addLog('info', 'Provisioner', `K8s Pod ${podName} is RUNNING in namespace ${namespace}`);

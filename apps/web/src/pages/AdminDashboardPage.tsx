@@ -21,7 +21,7 @@ export const AdminDashboardPage: React.FC = () => {
   const [newLabName, setNewLabName] = useState('');
   const [newLabSlug, setNewLabSlug] = useState('');
   const [newLabCategory, setNewLabCategory] = useState<any>('Linux');
-  const [newLabImage, setNewLabImage] = useState('ubuntu:24.04');
+  const [newLabImage, setNewLabImage] = useState('ubuntu:latest');
   const [newLabCpu, setNewLabCpu] = useState('1');
   const [newLabMemory, setNewLabMemory] = useState('1Gi');
   const [newLabInstructions, setNewLabInstructions] = useState('# New Lab\nWelcome to your lab environment.');

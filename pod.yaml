@@ -8,7 +8,7 @@ metadata:
 spec:
   containers:
     - name: ubuntu
-      image:  abhaydandgedocker/byolab:latest
+      image: ubuntu:latest
       ports:
         - containerPort: 22
       resources:

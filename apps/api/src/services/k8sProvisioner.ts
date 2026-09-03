@@ -120,7 +120,7 @@ export class LabProvisionerService {
         containers: [
           {
             name: 'lab-container',
-            image: lab.dockerImage || 'abhaydandgedocker/byolab',
+            image: lab.dockerImage || 'ubuntu:latest',
             command: lab.startupCommand ? ['/bin/sh', '-c', lab.startupCommand] : ['/bin/bash'],
             ports: [
               {

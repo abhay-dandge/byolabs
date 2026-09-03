@@ -4,11 +4,14 @@ import { api } from '../lib/api';
 import { Lab, LabSession } from '@byolabs/shared';
 import { TerminalView } from '../components/TerminalView';
 import { InstructionsPanel } from '../components/InstructionsPanel';
-import { Terminal, Clock, RefreshCw, Square, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Terminal, Clock, RefreshCw, Square, ArrowLeft, CheckCircle2, AlertCircle, Award } from 'lucide-react';
+import { CertificateModal } from '../components/CertificateModal';
+import { useAuth } from '../context/AuthContext';
 
 export const LabWorkspacePage: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [session, setSession] = useState<LabSession | null>(null);
   const [lab, setLab] = useState<Lab | null>(null);
@@ -16,6 +19,7 @@ export const LabWorkspacePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
+  const [showCertModal, setShowCertModal] = useState(false);
 
   const fetchSession = async () => {
     if (!sessionId) return;
@@ -168,6 +172,16 @@ export const LabWorkspacePage: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-2">
+            {session.completedTasks.length === lab.tasks.length && lab.tasks.length > 0 && (
+              <button
+                onClick={() => setShowCertModal(true)}
+                className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold font-sans text-xs flex items-center space-x-1 shadow-lg shadow-amber-950/50 transition"
+              >
+                <Award className="w-3.5 h-3.5" />
+                <span>Claim Certificate</span>
+              </button>
+            )}
+
             <button
               onClick={handleResetLab}
               disabled={actionLoading || isExpired}
@@ -201,6 +215,15 @@ export const LabWorkspacePage: React.FC = () => {
           <TerminalView sessionId={session.id} />
         </div>
       </div>
+
+      {showCertModal && (
+        <CertificateModal
+          lab={lab}
+          session={session}
+          user={user}
+          onClose={() => setShowCertModal(false)}
+        />
+      )}
     </div>
   );
 };

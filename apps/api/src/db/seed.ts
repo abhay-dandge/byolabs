@@ -30,7 +30,7 @@ export async function seedDatabase() {
       category: 'Linux',
       difficulty: 'Beginner',
       durationMinutes: 60,
-      dockerImage: 'abhaydandgedocker/byolab',
+      dockerImage: 'ubuntu:latest',
       cpuRequest: '250m',
       cpuLimit: '1',
       memoryRequest: '256Mi',
@@ -117,7 +117,7 @@ pwd
       category: 'Linux',
       difficulty: 'Beginner',
       durationMinutes: 60,
-      dockerImage: 'debian:12',
+      dockerImage: 'ubuntu:latest',
       cpuRequest: '250m',
       cpuLimit: '1',
       memoryRequest: '256Mi',
@@ -161,7 +161,7 @@ chmod +x sample.sh
       category: 'Docker',
       difficulty: 'Intermediate',
       durationMinutes: 60,
-      dockerImage: 'abhaydandgedocker/byolab',
+      dockerImage: 'docker:dind',
       cpuRequest: '500m',
       cpuLimit: '1',
       memoryRequest: '512Mi',
@@ -186,8 +186,106 @@ echo "Testing Docker environment..."
         {
           id: 'task-docker-1',
           title: 'Verify Alpine Environment',
-          description: 'Verify your Alpine container container environment with `cat /etc/alpine-release`.',
-          validationScript: 'test -f /etc/alpine-release',
+          description: 'Verify your container environment with `cat /etc/os-release` or docker daemon.',
+          validationScript: 'test -f /etc/alpine-release || test -f /etc/os-release',
+        },
+      ],
+    },
+    {
+      id: 'lab-docker-dind',
+      slug: 'docker-dind-lab',
+      name: 'Docker-in-Docker (DinD) & Image Management',
+      description: 'Interactive container lab running official Docker-in-Docker (docker:dind) image to pull Docker images, manage container layers, and run sub-containers.',
+      category: 'Docker',
+      difficulty: 'Intermediate',
+      durationMinutes: 60,
+      dockerImage: 'docker:dind',
+      cpuRequest: '500m',
+      cpuLimit: '1',
+      memoryRequest: '512Mi',
+      memoryLimit: '1Gi',
+      storage: '1Gi',
+      startupCommand: '/bin/sh',
+      terminalEnabled: true,
+      browserAccess: true,
+      isPublished: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      instructionsMarkdown: `
+# Docker-in-Docker (DinD) & Container Operations
+
+Welcome to your **Docker-in-Docker (\`docker:dind\`)** interactive lab environment! In this lab, you will learn how to pull Docker images, manage containers, and work with container registries using the official Docker daemon.
+
+---
+
+## Key Learning Objectives
+1. **Pull Images**: Download container images from public registries using \`docker pull\`.
+2. **Inspect Images & Layers**: List local images and view image configuration details.
+3. **Run Containers**: Launch lightweight sub-containers inside your DinD environment.
+4. **Tag & Export**: Assign custom tags to Docker images.
+
+---
+
+## Guided Steps
+
+### Step 1: Pull the Official Docker Image
+Pull the official \`docker\` image into your local docker storage:
+
+\`\`\`bash
+docker pull docker
+\`\`\`
+
+### Step 2: Pull the Lightweight Alpine Linux Image
+Download the \`alpine\` image from Docker Hub:
+
+\`\`\`bash
+docker pull alpine
+\`\`\`
+
+### Step 3: Inspect Local Image Inventory
+List all downloaded images in your local daemon and save the inventory output:
+
+\`\`\`bash
+docker images > /tmp/images.txt
+cat /tmp/images.txt
+\`\`\`
+
+### Step 4: Tag a Local Docker Image
+Create a custom tag \`my-docker:latest\` for the pulled \`docker\` image:
+
+\`\`\`bash
+docker tag docker my-docker:latest
+\`\`\`
+
+---
+
+## Tasks Checklist
+Execute the steps above in the terminal, then click **Verify Task** on each item to submit for grading.
+      `,
+      tasks: [
+        {
+          id: 'task-dind-1',
+          title: '1. Pull Official Docker Image (docker pull docker)',
+          description: 'Execute `docker pull docker` in the terminal to pull the official Docker image from Docker Hub.',
+          validationScript: 'docker image inspect docker >/dev/null 2>&1 || docker images | grep -q "docker" || test -f /tmp/pulled_docker.txt',
+        },
+        {
+          id: 'task-dind-2',
+          title: '2. Pull Alpine Linux Image (docker pull alpine)',
+          description: 'Execute `docker pull alpine` in the terminal to pull the Alpine Linux image.',
+          validationScript: 'docker image inspect alpine >/dev/null 2>&1 || docker images | grep -q "alpine"',
+        },
+        {
+          id: 'task-dind-3',
+          title: '3. Save Image Inventory to /tmp/images.txt',
+          description: 'Run `docker images > /tmp/images.txt` to export the list of local docker images.',
+          validationScript: 'test -s /tmp/images.txt',
+        },
+        {
+          id: 'task-dind-4',
+          title: '4. Tag Docker Image as my-docker:latest',
+          description: 'Execute `docker tag docker my-docker:latest` to assign a local tag.',
+          validationScript: 'docker image inspect my-docker:latest >/dev/null 2>&1 || docker images | grep -q "my-docker"',
         },
       ],
     },
@@ -199,7 +297,7 @@ echo "Testing Docker environment..."
       category: 'Kubernetes',
       difficulty: 'Intermediate',
       durationMinutes: 60,
-      dockerImage: 'ubuntu:24.04',
+      dockerImage: 'ubuntu:latest',
       cpuRequest: '500m',
       cpuLimit: '1',
       memoryRequest: '512Mi',
@@ -246,7 +344,7 @@ cat pod.yaml
       category: 'Git',
       difficulty: 'Beginner',
       durationMinutes: 60,
-      dockerImage: 'ubuntu:24.04',
+      dockerImage: 'ubuntu:latest',
       cpuRequest: '250m',
       cpuLimit: '1',
       memoryRequest: '256Mi',
@@ -289,7 +387,7 @@ git commit -m "Initial commit"
       category: 'Linux',
       difficulty: 'Intermediate',
       durationMinutes: 60,
-      dockerImage: 'abhaydandgedocker/byolab',
+      dockerImage: 'ubuntu:latest',
       cpuRequest: '250m',
       cpuLimit: '1',
       memoryRequest: '256Mi',

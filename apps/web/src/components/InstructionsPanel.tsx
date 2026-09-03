@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Lab, LabSession } from '@byolabs/shared';
 import { api } from '../lib/api';
-import { CheckCircle2, Circle, Play, AlertCircle, Copy, Check, ChevronRight } from 'lucide-react';
+import { CheckCircle2, Circle, Play, AlertCircle, Copy, Check, ChevronRight, ChevronDown, ChevronUp, RefreshCw, Award } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { CertificateModal } from './CertificateModal';
 
 interface InstructionsPanelProps {
   lab: Lab;
@@ -10,9 +12,25 @@ interface InstructionsPanelProps {
 }
 
 export const InstructionsPanel: React.FC<InstructionsPanelProps> = ({ lab, session, onSessionUpdate }) => {
+  const { user } = useAuth();
   const [verifyingTaskId, setVerifyingTaskId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ taskId: string; success: boolean; message: string } | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [showCertificateModal, setShowCertificateModal] = useState(false);
+  const [expandedTaskIds, setExpandedTaskIds] = useState<Record<string, boolean>>(() => {
+    if (lab.tasks && lab.tasks.length > 0) {
+      const firstIncomplete = lab.tasks.find(t => !session.completedTasks.includes(t.id));
+      return { [firstIncomplete ? firstIncomplete.id : lab.tasks[0].id]: true };
+    }
+    return {};
+  });
+
+  const toggleTaskExpand = (taskId: string) => {
+    setExpandedTaskIds(prev => ({
+      ...prev,
+      [taskId]: !prev[taskId],
+    }));
+  };
 
   const completedCount = session.completedTasks.length;
   const totalTasks = lab.tasks.length;
@@ -57,6 +75,33 @@ export const InstructionsPanel: React.FC<InstructionsPanelProps> = ({ lab, sessi
             style={{ width: `${progressPercent}%` }}
           />
         </div>
+
+        {/* Celebratory Completion Banner */}
+        {completedCount === totalTasks && totalTasks > 0 && (
+          <div className="mt-3 p-3.5 rounded-xl bg-gradient-to-r from-amber-950/80 via-slate-900 to-amber-950/60 border border-amber-500/50 shadow-xl shadow-amber-950/30 flex items-center justify-between gap-3 animate-in fade-in zoom-in-95 duration-300">
+            <div className="flex items-center space-x-3 min-w-0">
+              <div className="w-9 h-9 rounded-full bg-amber-500/20 border border-amber-400/50 flex items-center justify-center flex-shrink-0">
+                <Award className="w-5 h-5 text-amber-400 animate-bounce" />
+              </div>
+              <div className="min-w-0">
+                <h4 className="font-bold text-white text-xs truncate">
+                  Congratulations! Lab 100% Completed! 🎉
+                </h4>
+                <p className="text-[11px] text-amber-200/80 truncate">
+                  Claim your official lab completion certificate now.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowCertificateModal(true)}
+              className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-xs flex items-center space-x-1 shadow-lg shadow-amber-500/20 transition whitespace-nowrap flex-shrink-0"
+            >
+              <Award className="w-3.5 h-3.5" />
+              <span>Claim Certificate</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Content Area */}
@@ -106,66 +151,112 @@ export const InstructionsPanel: React.FC<InstructionsPanelProps> = ({ lab, sessi
               {lab.tasks.map((task, idx) => {
                 const isDone = session.completedTasks.includes(task.id);
                 const isVerifying = verifyingTaskId === task.id;
+                const isExpanded = !!expandedTaskIds[task.id];
                 const taskFeedback = feedback?.taskId === task.id ? feedback : null;
 
                 return (
                   <div
                     key={task.id}
-                    className={`p-4 rounded-xl border transition-all ${
+                    className={`rounded-xl border transition-all overflow-hidden ${
                       isDone
                         ? 'bg-emerald-950/20 border-emerald-800/40 text-slate-200'
-                        : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
+                        : isExpanded
+                        ? 'bg-slate-950/80 border-cyan-800/60 shadow-lg shadow-cyan-950/20'
+                        : 'bg-slate-950/40 border-slate-800 hover:border-slate-700'
                     }`}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-3">
+                    {/* Accordion Header (Click to toggle details) */}
+                    <div
+                      onClick={() => toggleTaskExpand(task.id)}
+                      className="w-full p-4 flex items-center justify-between cursor-pointer select-none group"
+                    >
+                      <div className="flex items-center space-x-3 min-w-0 pr-2">
                         {isDone ? (
-                          <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                          <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
                         ) : (
-                          <Circle className="w-5 h-5 text-slate-500 flex-shrink-0 mt-0.5" />
+                          <Circle className="w-5 h-5 text-slate-500 flex-shrink-0 group-hover:text-cyan-400 transition-colors" />
                         )}
-                        <div>
-                          <h4 className="font-semibold text-slate-100 text-sm">
-                            Task {idx + 1}: {task.title}
-                          </h4>
-                          <p className="text-xs text-slate-400 mt-1">{task.description}</p>
-                        </div>
+                        <h4 className={`font-semibold text-sm truncate ${isDone ? 'text-emerald-300' : 'text-slate-100 group-hover:text-cyan-300 transition-colors'}`}>
+                          Task {idx + 1}: {task.title}
+                        </h4>
                       </div>
 
-                      <button
-                        onClick={() => handleVerifyTask(task.id)}
-                        disabled={isDone || isVerifying}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center transition ${
-                          isDone
-                            ? 'bg-emerald-900/30 text-emerald-300 cursor-default'
-                            : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-950/50'
-                        }`}
-                      >
-                        {isVerifying ? (
-                          <span className="flex items-center">Validating...</span>
-                        ) : isDone ? (
-                          <span className="flex items-center"><Check className="w-3.5 h-3.5 mr-1" /> Verified</span>
+                      <div className="flex items-center space-x-2 flex-shrink-0">
+                        {isDone ? (
+                          <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-900/40 text-emerald-300 border border-emerald-800/50">
+                            Verified
+                          </span>
                         ) : (
-                          <span className="flex items-center"><Play className="w-3 h-3 mr-1" /> Verify Task</span>
+                          <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-800 text-slate-400">
+                            Pending
+                          </span>
                         )}
-                      </button>
+                        <button
+                          type="button"
+                          className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                          aria-label="Toggle details"
+                        >
+                          {isExpanded ? (
+                            <ChevronUp className="w-4 h-4 text-cyan-400" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-slate-200" />
+                          )}
+                        </button>
+                      </div>
                     </div>
 
-                    {/* Verification Feedback Banner */}
-                    {taskFeedback && (
-                      <div
-                        className={`mt-3 p-3 rounded-lg text-xs flex items-start space-x-2 ${
-                          taskFeedback.success
-                            ? 'bg-emerald-950/80 border border-emerald-800/60 text-emerald-300'
-                            : 'bg-rose-950/80 border border-rose-800/60 text-rose-300'
-                        }`}
-                      >
-                        {taskFeedback.success ? (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                        ) : (
-                          <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />
+                    {/* Accordion Dropdown Details */}
+                    {isExpanded && (
+                      <div className="p-4 pt-2 border-t border-slate-800/60 bg-slate-950/40 space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
+                        <div className="text-xs text-slate-300 leading-relaxed bg-slate-900/60 p-3 rounded-lg border border-slate-800/80">
+                          <span className="font-semibold text-cyan-400 block mb-1">Task Details:</span>
+                          {task.description}
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1">
+                          <span className="text-[11px] text-slate-400 font-mono">
+                            {isDone ? 'Task verification complete' : 'Execute required commands in terminal then click verify'}
+                          </span>
+
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleVerifyTask(task.id);
+                            }}
+                            disabled={isDone || isVerifying}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center transition ${
+                              isDone
+                                ? 'bg-emerald-900/30 text-emerald-300 cursor-default border border-emerald-800/40'
+                                : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-950/50'
+                            }`}
+                          >
+                            {isVerifying ? (
+                              <span className="flex items-center"><RefreshCw className="w-3 h-3 mr-1 animate-spin" /> Validating...</span>
+                            ) : isDone ? (
+                              <span className="flex items-center"><Check className="w-3.5 h-3.5 mr-1 text-emerald-400" /> Verified</span>
+                            ) : (
+                              <span className="flex items-center"><Play className="w-3 h-3 mr-1" /> Verify Task</span>
+                            )}
+                          </button>
+                        </div>
+
+                        {/* Verification Feedback Banner */}
+                        {taskFeedback && (
+                          <div
+                            className={`p-3 rounded-lg text-xs flex items-start space-x-2 ${
+                              taskFeedback.success
+                                ? 'bg-emerald-950/80 border border-emerald-800/60 text-emerald-300'
+                                : 'bg-rose-950/80 border border-rose-800/60 text-rose-300'
+                            }`}
+                          >
+                            {taskFeedback.success ? (
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                            ) : (
+                              <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />
+                            )}
+                            <div>{taskFeedback.message}</div>
+                          </div>
                         )}
-                        <div>{taskFeedback.message}</div>
                       </div>
                     )}
                   </div>
@@ -175,6 +266,15 @@ export const InstructionsPanel: React.FC<InstructionsPanelProps> = ({ lab, sessi
           </div>
         )}
       </div>
+
+      {showCertificateModal && (
+        <CertificateModal
+          lab={lab}
+          session={session}
+          user={user}
+          onClose={() => setShowCertificateModal(false)}
+        />
+      )}
     </div>
   );
 };

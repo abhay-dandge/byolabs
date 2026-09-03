@@ -217,6 +217,13 @@ class FileStore {
       if (idx === -1) {
         this.data.labs.push(seedLab);
         modified = true;
+      } else {
+        // Merge seed lab definitions into persistent store
+        this.data.labs[idx] = {
+          ...this.data.labs[idx],
+          ...seedLab,
+        };
+        modified = true;
       }
     }
 

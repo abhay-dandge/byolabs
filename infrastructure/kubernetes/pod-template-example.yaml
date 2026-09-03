@@ -42,7 +42,7 @@ metadata:
 spec:
   containers:
     - name: lab-container
-      image: abhaydandgedocker/byolab
+      image: ubuntu:latest
       command: ["/bin/bash"]
       ports:
         - name: ssh

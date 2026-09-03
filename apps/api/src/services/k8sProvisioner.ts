@@ -155,13 +155,14 @@ export class LabProvisionerService {
               image: 'docker:27-dind',
               securityContext: {
                 privileged: false,
-                allowPrivilegeEscalation: false,
+                allowPrivilegeEscalation: true,
                 capabilities: {
-                  add: ['SETUID', 'SETGID'],
+                  add: ['SYS_ADMIN', 'SETUID', 'SETGID', 'MKNOD', 'SYS_RESOURCE'],
                 },
               },
               env: [
                 { name: 'DOCKER_TLS_CERTDIR', value: '' }, // Unix socket communication
+                { name: 'DOCKER_DRIVER', value: 'vfs' },
               ],
               volumeMounts: [
                 { name: 'docker-socket', mountPath: '/var/run' },

@@ -19,14 +19,19 @@ spec:
       image: docker:27-dind
       securityContext:
         privileged: false
-        allowPrivilegeEscalation: false
+        allowPrivilegeEscalation: true
         capabilities:
           add:
+            - SYS_ADMIN
             - SETUID
             - SETGID
+            - MKNOD
+            - SYS_RESOURCE
       env:
         - name: DOCKER_TLS_CERTDIR
           value: "" # Disabling TLS since we communicate locally over a unix socket
+        - name: DOCKER_DRIVER
+          value: "vfs"
       volumeMounts:
         - name: docker-socket
           mountPath: /var/run

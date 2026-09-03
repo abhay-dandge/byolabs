@@ -156,12 +156,14 @@ export class LabProvisionerService {
               name: 'dind-daemon',
               image: 'docker:dind-rootless',
               securityContext: {
-                allowPrivilegeEscalation: false,
+                allowPrivilegeEscalation: true,
                 readOnlyRootFilesystem: false,
                 privileged: false,
+                seccompProfile: { type: 'Unconfined' },
               },
               env: [
                 { name: 'DOCKER_TLS_CERTDIR', value: '' }, // Unix socket communication
+                { name: 'DOCKERD_ROOTLESS_ROOTLESSKIT_FLAGS', value: '--net=slirp4netns --disable-host-loopback' },
               ],
               volumeMounts: [
                 { name: 'docker-socket', mountPath: '/run/user/1000' },

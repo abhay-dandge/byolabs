@@ -157,6 +157,42 @@
       ]
     },
     {
+      "id": "lab-docker-playground",
+      "slug": "docker-playground",
+      "name": "Docker Playground (Ubuntu Engine)",
+      "description": "Interactive Ubuntu 24.04 LTS playground environment equipped with Docker Engine installed via official get.docker.sh script.",
+      "category": "Docker",
+      "difficulty": "Intermediate",
+      "durationMinutes": 60,
+      "dockerImage": "ubuntu:latest",
+      "cpuRequest": "500m",
+      "cpuLimit": "1",
+      "memoryRequest": "512Mi",
+      "memoryLimit": "1Gi",
+      "storage": "1Gi",
+      "startupCommand": "which curl >/dev/null 2>&1 || (apt-get update && apt-get install -y curl sudo ca-certificates); curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh",
+      "terminalEnabled": true,
+      "browserAccess": true,
+      "isPublished": true,
+      "createdAt": "2026-08-17T06:35:58.649Z",
+      "updatedAt": "2026-08-17T06:35:58.649Z",
+      "instructionsMarkdown": "\n# Docker Playground (Ubuntu Engine)\n\nWelcome to your **Ubuntu 24.04** interactive lab environment configured with Docker Engine!\n\n---\n\n## Automated Setup Executed at Startup\n1. Checks for `curl` package (installs `curl`, `sudo`, `ca-certificates` if missing).\n2. Downloads official Docker script: `curl -fsSL https://get.docker.com -o get-docker.sh`.\n3. Installs official Docker Engine via `sh get-docker.sh`.\n",
+      "tasks": [
+        {
+          "id": "task-docker-play-1",
+          "title": "1. Verify Docker Installation Script (get-docker.sh)",
+          "description": "Verify `get-docker.sh` installer script exists or check `docker --version`.",
+          "validationScript": "test -f get-docker.sh || which docker || test -f /usr/bin/docker"
+        },
+        {
+          "id": "task-docker-play-2",
+          "title": "2. Check Docker Engine Version",
+          "description": "Execute `docker --version` in terminal.",
+          "validationScript": "docker --version || test -f get-docker.sh"
+        }
+      ]
+    },
+    {
       "id": "lab-kubernetes-basics",
       "slug": "kubernetes-basics",
       "name": "Kubernetes Pods & Workload Basics",

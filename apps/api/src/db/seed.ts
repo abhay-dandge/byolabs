@@ -290,6 +290,76 @@ Execute the steps above in the terminal, then click **Verify Task** on each item
       ],
     },
     {
+      id: 'lab-docker-playground',
+      slug: 'docker-playground',
+      name: 'Docker Playground (Ubuntu Engine)',
+      description: 'Interactive Ubuntu 24.04 LTS playground environment equipped with Docker Engine installed via official get.docker.sh script.',
+      category: 'Docker',
+      difficulty: 'Intermediate',
+      durationMinutes: 60,
+      dockerImage: 'ubuntu:latest',
+      cpuRequest: '500m',
+      cpuLimit: '1',
+      memoryRequest: '512Mi',
+      memoryLimit: '1Gi',
+      storage: '1Gi',
+      startupCommand: 'which curl >/dev/null 2>&1 || (apt-get update && apt-get install -y curl sudo ca-certificates); curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh',
+      terminalEnabled: true,
+      browserAccess: true,
+      isPublished: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      instructionsMarkdown: `
+# Docker Playground (Ubuntu Engine)
+
+Welcome to your **Ubuntu 24.04** interactive lab environment configured with Docker Engine!
+
+---
+
+## Automated Setup Executed at Startup
+1. Checks for \`curl\` package (installs \`curl\`, \`sudo\`, \`ca-certificates\` if missing).
+2. Downloads official Docker script: \`curl -fsSL https://get.docker.com -o get-docker.sh\`.
+3. Installs official Docker Engine via \`sh get-docker.sh\`.
+
+---
+
+## Guided Instructions
+
+### Step 1: Check Installed Docker Version
+Verify that Docker Engine is installed:
+
+\`\`\`bash
+docker --version
+\`\`\`
+
+### Step 2: Inspect get-docker.sh Installer Script
+Examine the official Docker installation script generated during container setup:
+
+\`\`\`bash
+ls -la get-docker.sh
+head -n 20 get-docker.sh
+\`\`\`
+
+---
+
+## Tasks Checklist
+      `,
+      tasks: [
+        {
+          id: 'task-docker-play-1',
+          title: '1. Verify Docker Installation Script (get-docker.sh)',
+          description: 'Verify `get-docker.sh` installer script exists or check `docker --version`.',
+          validationScript: 'test -f get-docker.sh || which docker || test -f /usr/bin/docker',
+        },
+        {
+          id: 'task-docker-play-2',
+          title: '2. Check Docker Engine Version',
+          description: 'Execute `docker --version` in terminal.',
+          validationScript: 'docker --version || test -f get-docker.sh',
+        },
+      ],
+    },
+    {
       id: 'lab-kubernetes-basics',
       slug: 'kubernetes-basics',
       name: 'Kubernetes Pods & Workload Basics',

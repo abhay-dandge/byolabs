@@ -276,7 +276,7 @@ async function connectK8sExecStream(ws: WebSocket, session: any, kc: k8s.KubeCon
       const namespace = session.namespace;
       const podName = session.podName;
       const isDockerLab = session.labSlug?.includes('docker') || session.labId?.includes('docker');
-      const container = targetContainer || (isDockerLab ? 'docker-cli' : 'lab-container');
+      const container = targetContainer || (isDockerLab ? 'docker-client' : 'lab-container');
 
       const { PassThrough } = await import('stream');
       const stdoutStream = new PassThrough();

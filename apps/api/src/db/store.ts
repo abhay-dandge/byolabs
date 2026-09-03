@@ -211,32 +211,8 @@ class FileStore {
       this.addUser(adminUser, adminPasswordHash);
     }
 
-    // Remove all Docker labs from database
-    const initialCount = this.data.labs.length;
-    this.data.labs = this.data.labs.filter((l) => l.category !== 'Docker' && !l.slug.includes('docker') && !l.id.includes('docker'));
-    let modified = this.data.labs.length !== initialCount;
-
-    for (const seedLab of seedLabs) {
-      const idx = this.data.labs.findIndex((l) => l.id === seedLab.id || l.slug === seedLab.slug);
-      if (idx === -1) {
-        this.data.labs.push(seedLab);
-        modified = true;
-      } else {
-        // Merge seed lab definitions into persistent store
-        this.data.labs[idx] = {
-          ...this.data.labs[idx],
-          ...seedLab,
-        };
-        modified = true;
-      }
-    }
-
-    if (modified || this.data.labs.length === 0) {
-      if (this.data.labs.length === 0) {
-        this.data.labs = seedLabs;
-      }
-      this.save();
-    }
+    this.data.labs = seedLabs;
+    this.save();
   }
 }
 

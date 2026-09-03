@@ -1,37 +1,51 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: dind-sidecar-example
+  name: rootless-dind
+  labels:
+    app: rootless-dind
 spec:
+  securityContext:
+    # Rootless DinD uses UID/GID 1000 (non-root) internally
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
   containers:
-  # Container 1: Application / CI Runner CLI
-  - name: docker-cli
-    image: docker:27-cli
-    command: ["tail", "-f", "/dev/null"] # Keeps the container alive
-    env:
-    - name: DOCKER_HOST
-      value: tcp://localhost:2376
-    - name: DOCKER_TLS_VERIFY
-      value: "1"
-    - name: DOCKER_CERT_PATH
-      value: /certs/client
-    volumeMounts:
-    - name: dind-certs
-      mountPath: /certs
+    # 1. The Rootless Docker Daemon (Server)
+    - name: dind-daemon
+      image: docker:dind-rootless
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: false
+        # Must not be privileged, but needs seccomp unconfined on some clusters
+        privileged: false
+      env:
+        - name: DOCKER_TLS_CERTDIR
+          value: "" # Disabling TLS since we communicate locally over a unix socket
+      volumeMounts:
+        - name: docker-socket
+          mountPath: /run/user/1000
+        - name: docker-storage
+          mountPath: /home/rootless/.local/share/docker
 
-  # Container 2: The Docker Daemon (Sidecar)
-  - name: dind-daemon
-    image: docker:27-dind
-    securityContext:
-      privileged: true # Required for DinD to mount filesystems
-    env:
-    - name: DOCKER_TLS_CERTDIR
-      value: /certs
-    volumeMounts:
-    - name: dind-certs
-      mountPath: /certs
+    # 2. The Client Container (e.g., CI Runner or App interacting with Docker)
+    - name: docker-client
+      image: docker:latest
+      command: ["sleep", "infinity"]
+      env:
+        # Point the CLI to the shared rootless Unix socket
+        - name: DOCKER_HOST
+          value: unix:///run/user/1000/docker.sock
+      volumeMounts:
+        - name: docker-socket
+          mountPath: /run/user/1000
 
   volumes:
-  - name: dind-certs
-    emptyDir: {}
+    # Shared memory volume for the Docker socket
+    - name: docker-socket
+      emptyDir: {}
+    # Ephemeral volume to hold images/layers inside the pod
+    - name: docker-storage
+      emptyDir: {}
+
 

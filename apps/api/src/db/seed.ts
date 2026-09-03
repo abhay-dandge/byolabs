@@ -154,6 +154,90 @@ chmod +x sample.sh
       ],
     },
     {
+      id: 'lab-docker-playground',
+      slug: 'docker-playground',
+      name: 'Docker Playground',
+      description: 'Interactive GKE Autopilot-native Docker Playground powered by a dual-container Rootless Docker Engine (docker:dind-rootless + docker:latest) communicating over a shared Unix socket.',
+      category: 'Docker',
+      difficulty: 'Intermediate',
+      durationMinutes: 60,
+      dockerImage: 'docker:latest',
+      cpuRequest: '500m',
+      cpuLimit: '1',
+      memoryRequest: '512Mi',
+      memoryLimit: '1.5Gi',
+      storage: '1Gi',
+      startupCommand: '',
+      terminalEnabled: true,
+      browserAccess: true,
+      isPublished: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      instructionsMarkdown: `
+# Docker Playground (Rootless DinD Engine)
+
+Welcome to your isolated **Docker Playground** running on a GKE Autopilot-native dual-container Pod spec!
+
+---
+
+## Pod Architecture Breakdown
+- **Daemon Container**: \`docker:dind-rootless\` running \`dockerd-rootless.sh\` (non-root UID 1000, \`privileged: false\`)
+- **Client Container**: \`docker:latest\` connected to the daemon over shared Unix socket \`unix:///run/user/1000/docker.sock\`
+- **Shared Storage**: \`docker-socket\` shared \`emptyDir\` volume
+
+---
+
+## Guided Exercises
+
+### Step 1: Verify Rootless Docker Daemon Connection
+Verify CLI communication with the Rootless Docker daemon:
+
+\`\`\`bash
+docker version
+docker info
+\`\`\`
+
+### Step 2: Test Container Lifecycle & Hello-World
+Run a lightweight \`hello-world\` container:
+
+\`\`\`bash
+docker run hello-world
+\`\`\`
+
+### Step 3: Pull & Inspect Alpine Linux Image
+Pull the official \`alpine\` image:
+
+\`\`\`bash
+docker pull alpine
+docker images
+\`\`\`
+
+---
+
+## Tasks Checklist
+      `,
+      tasks: [
+        {
+          id: 'task-docker-play-1',
+          title: '1. Verify Docker Daemon Connection (docker version)',
+          description: 'Execute `docker version` or `docker info` in the terminal to confirm CLI connection to the rootless daemon.',
+          validationScript: 'docker version || docker info',
+        },
+        {
+          id: 'task-docker-play-2',
+          title: '2. Run Hello-World Container',
+          description: 'Run `docker run hello-world` in terminal.',
+          validationScript: 'docker ps -a | grep -i "hello-world" || docker images | grep -q "hello-world"',
+        },
+        {
+          id: 'task-docker-play-3',
+          title: '3. Pull Alpine Image',
+          description: 'Execute `docker pull alpine` in terminal.',
+          validationScript: 'docker image inspect alpine >/dev/null 2>&1 || docker images | grep -q "alpine"',
+        },
+      ],
+    },
+    {
       id: 'lab-kubernetes-basics',
       slug: 'kubernetes-basics',
       name: 'Kubernetes Pods & Workload Basics',

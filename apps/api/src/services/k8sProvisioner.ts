@@ -138,25 +138,50 @@ export class LabProvisionerService {
           name: podName,
           namespace,
           labels: {
-            app: 'byolabs-lab',
+            app: 'rootless-dind',
             'session-id': session.id,
             'user-id': session.userId,
             'lab-type': lab.slug,
           },
         },
         spec: {
+          securityContext: {
+            runAsUser: 1000,
+            runAsGroup: 1000,
+            fsGroup: 1000,
+          },
           containers: [
+            // 1. The Rootless Docker Daemon (Server)
             {
-              name: 'docker-cli',
-              image: lab.dockerImage && lab.dockerImage !== 'ubuntu:latest' ? lab.dockerImage : 'docker:27-cli',
-              command: ['tail', '-f', '/dev/null'], // Keeps container alive while DinD daemon boots
+              name: 'dind-daemon',
+              image: 'docker:dind-rootless',
+              securityContext: {
+                allowPrivilegeEscalation: false,
+                readOnlyRootFilesystem: false,
+                privileged: false,
+              },
               env: [
-                { name: 'DOCKER_HOST', value: 'tcp://localhost:2376' },
-                { name: 'DOCKER_TLS_VERIFY', value: '1' },
-                { name: 'DOCKER_CERT_PATH', value: '/certs/client' },
+                { name: 'DOCKER_TLS_CERTDIR', value: '' }, // Unix socket communication
               ],
               volumeMounts: [
-                { name: 'dind-certs', mountPath: '/certs' },
+                { name: 'docker-socket', mountPath: '/run/user/1000' },
+                { name: 'docker-storage', mountPath: '/home/rootless/.local/share/docker' },
+              ],
+              resources: {
+                requests: { cpu: '250m', memory: '512Mi' },
+                limits: { cpu: '1', memory: '1.5Gi' },
+              },
+            },
+            // 2. The Client Container (Interactive Terminal & Docker CLI Runner)
+            {
+              name: 'docker-client',
+              image: 'docker:latest',
+              command: ['sleep', 'infinity'],
+              env: [
+                { name: 'DOCKER_HOST', value: 'unix:///run/user/1000/docker.sock' },
+              ],
+              volumeMounts: [
+                { name: 'docker-socket', mountPath: '/run/user/1000' },
               ],
               stdin: true,
               tty: true,
@@ -165,24 +190,10 @@ export class LabProvisionerService {
                 limits: { cpu: '500m', memory: '512Mi' },
               },
             },
-            {
-              name: 'dind-daemon',
-              image: 'docker:27-dind',
-              securityContext: { privileged: true },
-              env: [
-                { name: 'DOCKER_TLS_CERTDIR', value: '/certs' },
-              ],
-              volumeMounts: [
-                { name: 'dind-certs', mountPath: '/certs' },
-              ],
-              resources: {
-                requests: { cpu: '250m', memory: '256Mi' },
-                limits: { cpu: '1', memory: '1Gi' },
-              },
-            },
           ],
           volumes: [
-            { name: 'dind-certs', emptyDir: {} },
+            { name: 'docker-socket', emptyDir: {} },
+            { name: 'docker-storage', emptyDir: {} },
           ],
           restartPolicy: 'Never',
         },

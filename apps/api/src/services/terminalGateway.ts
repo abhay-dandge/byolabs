@@ -351,14 +351,20 @@ async function connectK8sExecStream(ws: WebSocket, session: any, kc: k8s.KubeCon
     });
   };
 
+  const isDockerLab = session.labSlug?.includes('docker') || session.labId?.includes('docker');
+
   try {
-    await tryExecShell(['/bin/bash']);
+    if (isDockerLab) {
+      await tryExecShell(['/bin/sh']);
+    } else {
+      await tryExecShell(['/bin/bash']);
+    }
   } catch (err: any) {
     try {
       await tryExecShell(['/bin/sh']);
     } catch (err2: any) {
-      console.warn('[TerminalGateway] Primary exec target failed, retrying with container lab-container...', err2?.message || err2);
-      await tryExecShell(['/bin/bash'], 'lab-container');
+      console.warn('[TerminalGateway] Primary exec target failed, retrying fallback...', err2?.message || err2);
+      await tryExecShell(['/bin/sh'], isDockerLab ? 'docker-client' : 'lab-container');
     }
   }
 }

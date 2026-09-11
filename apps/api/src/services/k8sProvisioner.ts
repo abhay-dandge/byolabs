@@ -245,12 +245,7 @@ export class LabProvisionerService {
           containers: [
             {
               name: 'docker-client',
-              image: 'ubuntu:24.04',
-              command: [
-                '/bin/bash',
-                '-c',
-                'apt-get update && apt-get install -y curl ca-certificates iptables && curl -fsSL https://get.docker.com | sh && (dockerd --storage-driver=overlay2 > /var/log/dockerd.log 2>&1 || dockerd --storage-driver=vfs > /var/log/dockerd.log 2>&1 &) && sleep infinity',
-              ],
+              image: lab.dockerImage && lab.dockerImage !== 'ubuntu:24.04' ? lab.dockerImage : 'docker:dind',
               securityContext: {
                 privileged: true,
                 allowPrivilegeEscalation: true,

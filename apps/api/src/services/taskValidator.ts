@@ -65,12 +65,14 @@ export class TaskValidatorService {
         stderrBuf += data.toString();
       });
 
+      const isDockerLab = session.labSlug?.includes('docker') || session.labId?.includes('docker');
+      const containerName = isDockerLab ? 'docker-client' : 'lab-container';
       const command = ['/bin/sh', '-c', script];
 
       k8sExec.exec(
         session.namespace,
         session.podName,
-        'lab-container',
+        containerName,
         command,
         stdoutStream,
         stderrStream,

@@ -74,13 +74,13 @@ export function setupTerminalGateway(server: Server) {
     db.updateSession(session);
 
     const isK8s = k8sProvisioner.getIsK8sAvailable();
-    const kc = k8sProvisioner.getKubeConfig();
+    const sessionKc = k8sProvisioner.getKubeConfigForSession(session) || k8sProvisioner.getKubeConfig();
 
-    if (isK8s && kc && !session.isSandbox) {
+    if (isK8s && sessionKc && !session.isSandbox) {
       // 1. Try Native Kubernetes API Exec stream using @kubernetes/client-node
       try {
         console.log(`[TerminalGateway] Attempting native K8s API Exec for session ${session.id}...`);
-        await connectK8sExecStream(ws, session, kc);
+        await connectK8sExecStream(ws, session, sessionKc);
         return;
       } catch (err: any) {
         console.warn('[TerminalGateway] Native K8s API Exec stream failed:', err?.message || err);
@@ -105,8 +105,9 @@ function connectKubectlExecStream(ws: WebSocket, session: any): Promise<boolean>
   return new Promise((resolve) => {
     const namespace = session.namespace;
     const podName = session.podName;
+    const contextName = k8sProvisioner.getClusterContextForSession(session);
 
-    const proc = spawn('kubectl', ['exec', '-i', '-n', namespace, podName, '--', '/bin/bash'], {
+    const proc = spawn('kubectl', ['--context', contextName, 'exec', '-i', '-n', namespace, podName, '--', '/bin/bash'], {
       env: { ...process.env, TERM: 'xterm-256color' },
     });
 
@@ -163,8 +164,9 @@ function connectKubectlShStream(ws: WebSocket, session: any): Promise<boolean> {
   return new Promise((resolve) => {
     const namespace = session.namespace;
     const podName = session.podName;
+    const contextName = k8sProvisioner.getClusterContextForSession(session);
 
-    const proc = spawn('kubectl', ['exec', '-i', '-n', namespace, podName, '--', '/bin/sh'], {
+    const proc = spawn('kubectl', ['--context', contextName, 'exec', '-i', '-n', namespace, podName, '--', '/bin/sh'], {
       env: { ...process.env, TERM: 'xterm-256color' },
     });
 

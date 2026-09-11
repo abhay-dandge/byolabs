@@ -80,6 +80,47 @@ export class LabProvisionerService {
     return this.kubeConfig;
   }
 
+  public getKubeConfigForSession(session: LabSession): k8s.KubeConfig | null {
+    const isDockerLab = session.labSlug?.includes('docker') || session.labId?.includes('docker');
+    const autopilotContext = process.env.AUTOPILOT_K8S_CONTEXT || 'gke_gdg-test-458407_asia-south1_autopilot-cluster-2-spot';
+    const standardContext = process.env.STANDARD_K8S_CONTEXT || 'gke_gdg-test-458407_us-central1-a_byo-dind-cluster';
+    const targetContext = isDockerLab ? standardContext : autopilotContext;
+
+    try {
+      const kc = new k8s.KubeConfig();
+      if (process.env.KUBERNETES_SERVICE_HOST && !isDockerLab && !process.env.AUTOPILOT_K8S_CONTEXT) {
+        kc.loadFromCluster();
+        return kc;
+      }
+
+      if (isDockerLab && process.env.STANDARD_K8S_HOST && process.env.STANDARD_K8S_TOKEN) {
+        const cluster = {
+          name: 'byo-dind-cluster',
+          server: process.env.STANDARD_K8S_HOST,
+          skipTLSVerify: !process.env.STANDARD_K8S_CA_DATA,
+          caData: process.env.STANDARD_K8S_CA_DATA,
+        };
+        const user = { name: 'byolabs-user', token: process.env.STANDARD_K8S_TOKEN };
+        kc.loadFromClusterAndUser(cluster, user);
+        return kc;
+      }
+
+      kc.loadFromDefault();
+      kc.setCurrentContext(targetContext);
+      return kc;
+    } catch (err: any) {
+      console.warn(`[K8sProvisioner] Failed to load KubeConfig for session ${session.id} (Context: ${targetContext}):`, err?.message);
+      return this.kubeConfig;
+    }
+  }
+
+  public getClusterContextForSession(session: LabSession): string {
+    const isDockerLab = session.labSlug?.includes('docker') || session.labId?.includes('docker');
+    return isDockerLab
+      ? (process.env.STANDARD_K8S_CONTEXT || 'gke_gdg-test-458407_us-central1-a_byo-dind-cluster')
+      : (process.env.AUTOPILOT_K8S_CONTEXT || 'gke_gdg-test-458407_asia-south1_autopilot-cluster-2-spot');
+  }
+
   private getClusterApiForLab(lab: Lab): { api: k8s.CoreV1Api; clusterName: string; isStandardCluster: boolean } {
     const isDockerLab = lab.category === 'Docker' || lab.slug?.includes('docker') || lab.dockerImage?.includes('dind') || lab.dockerImage === 'docker:27-cli';
 
@@ -208,19 +249,31 @@ export class LabProvisionerService {
               command: [
                 '/bin/bash',
                 '-c',
-                'apt-get update && apt-get install -y curl ca-certificates iptables && curl -fsSL https://get.docker.com | sh && (dockerd > /var/log/dockerd.log 2>&1 &) && sleep infinity',
+                'apt-get update && apt-get install -y curl ca-certificates iptables && curl -fsSL https://get.docker.com | sh && (dockerd --storage-driver=overlay2 > /var/log/dockerd.log 2>&1 || dockerd --storage-driver=vfs > /var/log/dockerd.log 2>&1 &) && sleep infinity',
               ],
               securityContext: {
                 privileged: true,
                 allowPrivilegeEscalation: true,
                 readOnlyRootFilesystem: false,
               },
+              volumeMounts: [
+                {
+                  name: 'docker-storage',
+                  mountPath: '/var/lib/docker',
+                },
+              ],
               stdin: true,
               tty: true,
               resources: {
                 requests: { cpu: '500m', memory: '1Gi' },
                 limits: { cpu: '2', memory: '2Gi' },
               },
+            },
+          ],
+          volumes: [
+            {
+              name: 'docker-storage',
+              emptyDir: {},
             },
           ],
           restartPolicy: 'Never',

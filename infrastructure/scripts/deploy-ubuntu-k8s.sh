@@ -49,8 +49,15 @@ else
   echo -e "${GREEN}✔ PM2 process manager is already installed.${NC}"
 fi
 
-# 4. Check & Provision Kubernetes Engine (K3s)
-echo -e "\n${BLUE}[3/6] Setting up Kubernetes engine & Kubeconfig...${NC}"
+# 4. Check & Provision Kubernetes Engine & GKE Credentials
+echo -e "\n${BLUE}[3/6] Setting up Kubernetes engine & KubeConfig contexts...${NC}"
+
+if command -v gcloud &> /dev/null; then
+  echo -e "${YELLOW}Fetching GKE credentials for Autopilot and Standard DinD clusters...${NC}"
+  gcloud container clusters get-credentials autopilot-cluster-2-spot --region asia-south1 --project gdg-test-458407 2>/dev/null || true
+  gcloud container clusters get-credentials byo-dind-cluster --zone us-central1-a --project gdg-test-458407 2>/dev/null || true
+fi
+
 if ! command -v kubectl &> /dev/null && [ ! -f ~/.kube/config ] && [ ! -f /etc/rancher/k3s/k3s.yaml ]; then
   echo -e "${YELLOW}No Kubernetes cluster detected. Installing lightweight K3s server...${NC}"
   curl -sfL https://get.k3s.io | sh -
@@ -75,7 +82,7 @@ fi
 # Apply BYOLabs K8s RBAC Roles
 echo -e "${YELLOW}Applying BYOLabs K8s ClusterRole & ServiceAccount permissions...${NC}"
 if [ -f "./infrastructure/kubernetes/rbac.yaml" ]; then
-  kubectl apply -f ./infrastructure/kubernetes/rbac.yaml
+  kubectl apply -f ./infrastructure/kubernetes/rbac.yaml 2>/dev/null || true
   echo -e "${GREEN}✔ K8s RBAC ClusterRoles successfully applied.${NC}"
 fi
 

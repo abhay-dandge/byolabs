@@ -19,15 +19,12 @@ export class LabProvisionerService {
 
     try {
       const kc = new k8s.KubeConfig();
-      if (process.env.KUBERNETES_SERVICE_HOST) {
+      if (process.env.KUBERNETES_SERVICE_HOST && !process.env.AUTOPILOT_K8S_CONTEXT) {
         kc.loadFromCluster();
         this.defaultApi = kc.makeApiClient(k8s.CoreV1Api);
         this.autopilotApi = this.defaultApi;
-        console.log('[K8sProvisioner] In-cluster K8s detected (Autopilot default)');
+        console.log('[K8sProvisioner] In-cluster K8s detected (Autopilot default via pod ServiceAccount)');
       } else {
-        kc.loadFromDefault();
-        this.kubeConfig = kc;
-
         // Init Autopilot client
         try {
           const kcAuto = new k8s.KubeConfig();
@@ -36,23 +33,36 @@ export class LabProvisionerService {
           this.autopilotApi = kcAuto.makeApiClient(k8s.CoreV1Api);
           console.log(`[K8sProvisioner] Initialized Autopilot Cluster client (${autopilotContext})`);
         } catch (autoErr: any) {
-          console.warn('[K8sProvisioner] Could not bind Autopilot cluster context:', autoErr?.message);
+          console.warn(`[K8sProvisioner] Could not bind Autopilot cluster context '${autopilotContext}':`, autoErr?.message);
         }
+      }
 
-        // Init Standard DinD client
-        try {
-          const kcStd = new k8s.KubeConfig();
+      // Init Standard DinD client
+      try {
+        const kcStd = new k8s.KubeConfig();
+
+        if (process.env.STANDARD_K8S_HOST && process.env.STANDARD_K8S_TOKEN) {
+          const cluster = {
+            name: 'byo-dind-cluster',
+            server: process.env.STANDARD_K8S_HOST,
+            skipTLSVerify: !process.env.STANDARD_K8S_CA_DATA,
+            caData: process.env.STANDARD_K8S_CA_DATA,
+          };
+          const user = { name: 'byolabs-user', token: process.env.STANDARD_K8S_TOKEN };
+          kcStd.loadFromClusterAndUser(cluster, user);
+          this.standardApi = kcStd.makeApiClient(k8s.CoreV1Api);
+          console.log(`[K8sProvisioner] Initialized Standard DinD Cluster client via env endpoint (${process.env.STANDARD_K8S_HOST})`);
+        } else {
           kcStd.loadFromDefault();
           kcStd.setCurrentContext(standardContext);
           this.standardApi = kcStd.makeApiClient(k8s.CoreV1Api);
           console.log(`[K8sProvisioner] Initialized Standard DinD Cluster client (${standardContext})`);
-        } catch (stdErr: any) {
-          console.warn('[K8sProvisioner] Could not bind Standard cluster context:', stdErr?.message);
         }
-
-        this.defaultApi = this.standardApi || this.autopilotApi || kc.makeApiClient(k8s.CoreV1Api);
+      } catch (stdErr: any) {
+        console.warn(`[K8sProvisioner] Could not bind Standard DinD cluster context '${standardContext}':`, stdErr?.message);
       }
 
+      this.defaultApi = this.standardApi || this.autopilotApi;
       if (this.autopilotApi || this.standardApi || this.defaultApi) {
         this.isK8sAvailable = true;
       }

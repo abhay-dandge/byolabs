@@ -514,6 +514,208 @@ touch /root/.unnati{1..10}.xls
         },
       ],
     },
+    {
+      id: 'lab-rhcsa-cla-module2',
+      slug: 'rhcsa-cla-module2',
+      name: 'RHCSA & CLA Module 2 Gradable Tasks',
+      description: 'Unnati Development and Training Center RHCSA+CLA Module 2 practical gradable task suite covering user creation with UIDs/GIDs, group management, GECOS comments, non-interactive shells, secondary group assignments, password aging policies, account locking, and custom home directories.',
+      category: 'Linux',
+      difficulty: 'Intermediate',
+      durationMinutes: 60,
+      dockerImage: 'ubuntu:latest',
+      cpuRequest: '250m',
+      cpuLimit: '1',
+      memoryRequest: '256Mi',
+      memoryLimit: '1Gi',
+      storage: '1Gi',
+      startupCommand: '/bin/bash',
+      terminalEnabled: true,
+      browserAccess: true,
+      isPublished: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      instructionsMarkdown: `
+# RHCSA & CLA Module 2 Gradable Tasks
+*Unnati Development and Training Center Pvt Ltd*
+
+Welcome to your Linux RHCSA & CLA Module 2 practical lab environment. Execute the commands in the terminal window to fulfill all 14 gradable user and group administration task requirements.
+
+---
+
+## Guided Instructions & Reference Commands
+
+### Task 1: Create User "vinay" with UID 4353
+Create a user named \`vinay\` with the UID set to \`4353\`.
+\`\`\`bash
+useradd -u 4353 vinay
+\`\`\`
+
+### Task 2: Create User "kiran" with GID 2083
+Create a user named \`kiran\` with the GID set to \`2083\`. *(Note: Create group with GID 2083 first)*
+\`\`\`bash
+groupadd -g 2083 kiran_grp
+useradd -g 2083 kiran
+\`\`\`
+
+### Task 3: Set GECOS Name for "vinay"
+Set the GECOS name of the user \`vinay\` as \`developer2\`.
+\`\`\`bash
+usermod -c "developer2" vinay
+\`\`\`
+
+### Task 4: Create Group "admin_java"
+Create a group named \`admin_java\`.
+\`\`\`bash
+groupadd admin_java
+\`\`\`
+
+### Task 5: Create Group "ht_java" with GID 2076
+Create a group named \`ht_java\` with the ID set to \`2076\`.
+\`\`\`bash
+groupadd -g 2076 ht_java
+\`\`\`
+
+### Task 6: Create Group "myadmin"
+Create a group named \`myadmin\`.
+\`\`\`bash
+groupadd myadmin
+\`\`\`
+
+### Task 7: Create Group "super_admin"
+Create a group named \`super_admin\`.
+\`\`\`bash
+groupadd super_admin
+\`\`\`
+
+### Task 8: User "shrikant" with Secondary Groups
+Create a user named \`shrikant\` and add \`shrikant\` user to \`admin_java\` and \`myadmin\` secondary groups.
+\`\`\`bash
+useradd -G admin_java,myadmin shrikant
+\`\`\`
+
+### Task 9: User "mahesh" with Secondary Groups
+Create a user named \`mahesh\` and add \`mahesh\` user to \`ht_java\` and \`super_admin\` secondary groups.
+\`\`\`bash
+useradd -G ht_java,super_admin mahesh
+\`\`\`
+
+### Task 10: User "varsha" with UID 1089, GID 2076, and Non-login Shell
+Create user \`varsha\` with UID \`1089\`, primary group GID \`2076\` (\`ht_java\`), and shell \`/sbin/nologin\`.
+\`\`\`bash
+useradd -u 1089 -g 2076 -s /sbin/nologin varsha
+\`\`\`
+
+### Task 11: Configure Password Max Age Policy for "vinay"
+Set the maximum password age policy to \`90\` days for user \`vinay\`.
+\`\`\`bash
+chage -M 90 vinay
+\`\`\`
+
+### Task 12: Lock User Account "kiran"
+Lock the user account for \`kiran\` to disable login access.
+\`\`\`bash
+usermod -L kiran
+\`\`\`
+
+### Task 13: Set Account Expiration Date for "mahesh"
+Set the account expiration date for user \`mahesh\` to \`2026-12-31\`.
+\`\`\`bash
+chage -E 2026-12-31 mahesh
+\`\`\`
+
+### Task 14: User "devops_admin" with Custom Home Directory
+Create user \`devops_admin\` with home directory set to \`/home/devops_home\`.
+\`\`\`bash
+useradd -m -d /home/devops_home devops_admin
+\`\`\`
+      `,
+      tasks: [
+        {
+          id: 'task-mod2-1',
+          title: '1. Create user "vinay" with UID 4353',
+          description: 'Create a user named "vinay" with the UID set to 4353.',
+          validationScript: 'id -u vinay 2>/dev/null | grep -q "^4353$"',
+        },
+        {
+          id: 'task-mod2-2',
+          title: '2. Create user "kiran" with GID 2083',
+          description: 'Create a user named "kiran" with primary GID set to 2083.',
+          validationScript: 'id -g kiran 2>/dev/null | grep -q "^2083$"',
+        },
+        {
+          id: 'task-mod2-3',
+          title: '3. Set GECOS name of "vinay" as "developer2"',
+          description: 'Set the GECOS name of the user "vinay" as "developer2".',
+          validationScript: 'getent passwd vinay 2>/dev/null | cut -d: -f5 | grep -q "developer2"',
+        },
+        {
+          id: 'task-mod2-4',
+          title: '4. Create group "admin_java"',
+          description: 'Create a group named "admin_java".',
+          validationScript: 'getent group admin_java >/dev/null 2>&1',
+        },
+        {
+          id: 'task-mod2-5',
+          title: '5. Create group "ht_java" with GID 2076',
+          description: 'Create a group named "ht_java" with the ID set to 2076.',
+          validationScript: 'getent group ht_java 2>/dev/null | cut -d: -f3 | grep -q "^2076$"',
+        },
+        {
+          id: 'task-mod2-6',
+          title: '6. Create group "myadmin"',
+          description: 'Create a group named "myadmin".',
+          validationScript: 'getent group myadmin >/dev/null 2>&1',
+        },
+        {
+          id: 'task-mod2-7',
+          title: '7. Create group "super_admin"',
+          description: 'Create a group named "super_admin".',
+          validationScript: 'getent group super_admin >/dev/null 2>&1',
+        },
+        {
+          id: 'task-mod2-8',
+          title: '8. Create user "shrikant" with secondary groups "admin_java" and "myadmin"',
+          description: 'Create a user named "shrikant" and add "shrikant" user to "admin_java" and "myadmin" secondary groups.',
+          validationScript: 'id -Gn shrikant 2>/dev/null | grep -w "admin_java" | grep -q -w "myadmin"',
+        },
+        {
+          id: 'task-mod2-9',
+          title: '9. Create user "mahesh" with secondary groups "ht_java" and "super_admin"',
+          description: 'Create a user named "mahesh" and add "mahesh" user to "ht_java" and "super_admin" secondary groups.',
+          validationScript: 'id -Gn mahesh 2>/dev/null | grep -w "ht_java" | grep -q -w "super_admin"',
+        },
+        {
+          id: 'task-mod2-10',
+          title: '10. Create user "varsha" with UID 1089, GID 2076, and /sbin/nologin shell',
+          description: 'Create user "varsha" with UID 1089, primary group GID 2076 (ht_java), and shell "/sbin/nologin".',
+          validationScript: '[ "$(id -u varsha 2>/dev/null)" = "1089" ] && [ "$(id -g varsha 2>/dev/null)" = "2076" ] && getent passwd varsha 2>/dev/null | grep -qE "nologin"',
+        },
+        {
+          id: 'task-mod2-11',
+          title: '11. Configure password max age to 90 days for user "vinay"',
+          description: 'Set the maximum password age policy to 90 days for user "vinay".',
+          validationScript: 'chage -l vinay 2>/dev/null | grep -i "Maximum number of days between password change" | grep -q "90"',
+        },
+        {
+          id: 'task-mod2-12',
+          title: '12. Lock user account "kiran"',
+          description: 'Lock the user account for "kiran" to disable login access.',
+          validationScript: 'passwd -S kiran 2>/dev/null | grep -qE "L|locked" || getent shadow kiran 2>/dev/null | cut -d: -f2 | grep -q "!"',
+        },
+        {
+          id: 'task-mod2-13',
+          title: '13. Set account expiration date for user "mahesh"',
+          description: 'Set the account expiration date for user "mahesh" to 2026-12-31.',
+          validationScript: 'chage -l mahesh 2>/dev/null | grep -i "Account expires" | grep -q "2026"',
+        },
+        {
+          id: 'task-mod2-14',
+          title: '14. Create user "devops_admin" with custom home directory /home/devops_home',
+          description: 'Create user "devops_admin" with home directory set to "/home/devops_home".',
+          validationScript: 'getent passwd devops_admin 2>/dev/null | cut -d: -f6 | grep -q "/home/devops_home" && test -d /home/devops_home',
+        },
+        ],
+    },
   ];
 
   db.seedInitialData(seedLabs, adminUser, adminPasswordHash);

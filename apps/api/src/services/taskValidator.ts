@@ -32,17 +32,32 @@ export class TaskValidatorService {
 
     // Fallback Sandbox validation
     try {
-      const { stdout, stderr } = await execAsync(task.validationScript, { timeout: 10000 });
+      const isWin = process.platform === 'win32';
+      let cmd = task.validationScript;
+      if (isWin) {
+        cmd = `wsl /bin/sh -c ${JSON.stringify(task.validationScript)} 2>NUL || bash -c ${JSON.stringify(task.validationScript)} 2>NUL || ${task.validationScript}`;
+      }
+      const { stdout, stderr } = await execAsync(cmd, { timeout: 10000 });
       this.markTaskCompleted(session, task.id);
       return {
         success: true,
         message: `Task verification passed! ${stdout ? `(${stdout.trim()})` : ''}`,
       };
     } catch (err: any) {
-      return {
-        success: false,
-        message: `Task verification failed: Requirements not met yet. Details: ${err?.stderr || err?.message || 'Check command execution inside terminal.'}`,
-      };
+      // Retry direct exec as last resort if shell wrapper failed
+      try {
+        const { stdout } = await execAsync(task.validationScript, { timeout: 10000 });
+        this.markTaskCompleted(session, task.id);
+        return {
+          success: true,
+          message: `Task verification passed! ${stdout ? `(${stdout.trim()})` : ''}`,
+        };
+      } catch (innerErr: any) {
+        return {
+          success: false,
+          message: `Task verification failed: Requirements not met yet. Details: ${err?.stderr || err?.message || 'Check command execution inside terminal.'}`,
+        };
+      }
     }
   }
 

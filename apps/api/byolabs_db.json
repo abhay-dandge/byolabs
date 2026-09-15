@@ -44,8 +44,8 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-08-17T06:35:58.649Z",
-      "updatedAt": "2026-08-17T06:35:58.649Z",
+      "createdAt": "2026-09-15T13:14:12.733Z",
+      "updatedAt": "2026-09-15T13:14:12.733Z",
       "instructionsMarkdown": "\n# Ubuntu 24.04 Playground\n\nWelcome to your isolated **Ubuntu 24.04** container environment running as a Kubernetes pod.\n\n## Prerequisites & Tools\nThis container comes pre-configured with:\n- `bash`\n- `curl`, `wget`, `git`\n- `iproute2` (`ip a`, `ip route`), `net-tools`\n- `procps` (`ps aux`, `top`)\n- `vim`, `nano`\n\n---\n\n## Guided Exercises\n\n### Step 1: Inspect System Release & Kernel\nRun the following command in the interactive terminal on the right to view your OS version:\n\n```bash\ncat /etc/os-release\nuname -a\n```\n\n### Step 2: Working Directory & Environment Variables\nCheck your current working directory and active shell environment:\n\n```bash\npwd\nwhoami\nenv | grep USER\n```\n\n### Step 3: Create a DevOps Workspace Directory\nCreate a directory named `devops` in your home directory:\n\n```bash\nmkdir -p ~/devops && cd ~/devops\npwd\n```\n\n---\n\n## Tasks Checklist\n      ",
       "tasks": [
         {
@@ -75,7 +75,7 @@
       "description": "Master core Linux shell navigation, file manipulation, file permissions (chmod, chown), and process management.",
       "category": "Linux",
       "difficulty": "Beginner",
-      "durationMinutes": 45,
+      "durationMinutes": 60,
       "dockerImage": "ubuntu:latest",
       "cpuRequest": "250m",
       "cpuLimit": "1",
@@ -85,8 +85,8 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-08-17T06:35:58.649Z",
-      "updatedAt": "2026-08-17T06:35:58.649Z",
+      "createdAt": "2026-09-15T13:14:12.733Z",
+      "updatedAt": "2026-09-15T13:14:12.733Z",
       "instructionsMarkdown": "\n# Linux Fundamentals & File System Permissions\n\nLearn essential file ownership and permission control in Linux environments.\n\n## Quick Commands\n- `chmod 755 filename`\n- `chown user:group filename`\n- `ls -la`\n\n```bash\ntouch sample.sh\nchmod +x sample.sh\n./sample.sh\n```\n      ",
       "tasks": [
         {
@@ -101,23 +101,23 @@
       "id": "lab-docker-playground",
       "slug": "docker-playground",
       "name": "Docker Playground",
-      "description": "Interactive GKE Autopilot-native Docker Playground powered by a dual-container Rootless Docker Engine (docker:dind-rootless + docker:latest) communicating over a shared Unix socket.",
+      "description": "Interactive Docker Playground powered by official docker:dind image with instant startup and full root access.",
       "category": "Docker",
       "difficulty": "Intermediate",
       "durationMinutes": 60,
-      "dockerImage": "docker:latest",
+      "dockerImage": "docker:dind",
       "cpuRequest": "500m",
-      "cpuLimit": "1",
-      "memoryRequest": "512Mi",
-      "memoryLimit": "1.5Gi",
-      "storage": "1Gi",
-      "startupCommand": "",
+      "cpuLimit": "2",
+      "memoryRequest": "1Gi",
+      "memoryLimit": "2Gi",
+      "storage": "2Gi",
+      "startupCommand": "/bin/sh",
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-08-17T06:35:58.649Z",
-      "updatedAt": "2026-08-17T06:35:58.649Z",
-      "instructionsMarkdown": "\n# Docker Playground (Rootless DinD Engine)\n\nWelcome to your isolated **Docker Playground** running on a GKE Autopilot-native dual-container Pod spec!\n\n---\n\n## Pod Architecture Breakdown\n- **Daemon Container**: `docker:dind-rootless` running `dockerd-rootless.sh` (non-root UID 1000, `privileged: false`)\n- **Client Container**: `docker:latest` connected to the daemon over shared Unix socket `unix:///run/user/1000/docker.sock`\n- **Shared Storage**: `docker-socket` shared `emptyDir` volume\n\n---\n\n## Guided Exercises\n\n### Step 1: Verify Rootless Docker Daemon Connection\nVerify CLI communication with the Rootless Docker daemon:\n\n```bash\ndocker version\ndocker info\n```\n\n### Step 2: Test Container Lifecycle & Hello-World\nRun a lightweight `hello-world` container:\n\n```bash\ndocker run hello-world\n```\n\n### Step 3: Pull & Inspect Alpine Linux Image\nPull the official `alpine` image:\n\n```bash\ndocker pull alpine\ndocker images\n```\n\n---\n\n## Tasks Checklist\n",
+      "createdAt": "2026-09-15T13:14:12.733Z",
+      "updatedAt": "2026-09-15T13:14:12.733Z",
+      "instructionsMarkdown": "\n# Docker Playground (Ubuntu 24.04 Engine)\n\nWelcome to your isolated **Docker Playground** running on **Ubuntu 24.04 LTS**!\n\n---\n\n## Environment Architecture\n- **Operating System**: Ubuntu 24.04 LTS\n- **Docker Engine**: Installed automatically on boot via official `curl -fsSL https://get.docker.com | sh` script\n- **Daemon**: `dockerd` running natively in background with full container creation capability\n\n---\n\n## Guided Exercises\n\n### Step 1: Verify Installed Docker Engine & Daemon\nVerify CLI communication with the Docker daemon:\n\n```bash\ndocker version\ndocker info\n```\n\n### Step 2: Test Container Lifecycle & Hello-World\nRun a lightweight `hello-world` container:\n\n```bash\ndocker run hello-world\n```\n\n### Step 3: Pull & Inspect Alpine Linux Image\nPull the official `alpine` image:\n\n```bash\ndocker pull alpine\ndocker images\n```\n\n---\n\n## Tasks Checklist\n      ",
       "tasks": [
         {
           "id": "task-docker-play-1",
@@ -156,8 +156,8 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-08-17T06:35:58.649Z",
-      "updatedAt": "2026-08-17T06:35:58.649Z",
+      "createdAt": "2026-09-15T13:14:12.733Z",
+      "updatedAt": "2026-09-15T13:14:12.733Z",
       "instructionsMarkdown": "\n# Kubernetes Basics & Workloads\n\nLearn how Kubernetes manifests configure Pod specs and deployments.\n\n```bash\ncat << 'EOF' > pod.yaml\napiVersion: v1\nkind: Pod\nmetadata:\n  name: nginx-pod\nspec:\n  containers:\n  - name: nginx\n    image: nginx:alpine\nEOF\ncat pod.yaml\n```\n      ",
       "tasks": [
         {
@@ -175,7 +175,7 @@
       "description": "Practice git initialization, commits, branching strategies, merge conflict resolution, and rebase operations.",
       "category": "Git",
       "difficulty": "Beginner",
-      "durationMinutes": 45,
+      "durationMinutes": 60,
       "dockerImage": "ubuntu:latest",
       "cpuRequest": "250m",
       "cpuLimit": "1",
@@ -185,8 +185,8 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-08-17T06:35:58.649Z",
-      "updatedAt": "2026-08-17T06:35:58.649Z",
+      "createdAt": "2026-09-15T13:14:12.733Z",
+      "updatedAt": "2026-09-15T13:14:12.733Z",
       "instructionsMarkdown": "\n# Git Branching & Version Control\n\nPractice initializing repositories and managing branches.\n\n```bash\nmkdir my-repo && cd my-repo\ngit init\ngit config user.name \"Student\"\ngit config user.email \"student@byolabs.in\"\necho \"Initial commit\" > README.md\ngit add .\ngit commit -m \"Initial commit\"\n```\n      ",
       "tasks": [
         {
@@ -194,6 +194,210 @@
           "title": "Initialize Git Repo",
           "description": "Initialize a git repository in a directory named `my-repo` and create a initial commit.",
           "validationScript": "test -d my-repo/.git || test -d ~/my-repo/.git"
+        }
+      ]
+    },
+    {
+      "id": "lab-rhcsa-cla-module1",
+      "slug": "rhcsa-cla-module1",
+      "name": "RHCSA & CLA Module 1 Gradable Tasks",
+      "description": "Unnati Development and Training Center RHCSA+CLA Module 1 practical gradable task suite covering file creation, directory trees, process output redirection, file relocation, and hidden files.",
+      "category": "Linux",
+      "difficulty": "Intermediate",
+      "durationMinutes": 60,
+      "dockerImage": "ubuntu:latest",
+      "cpuRequest": "250m",
+      "cpuLimit": "1",
+      "memoryRequest": "256Mi",
+      "memoryLimit": "1Gi",
+      "storage": "1Gi",
+      "startupCommand": "/bin/bash",
+      "terminalEnabled": true,
+      "browserAccess": true,
+      "isPublished": true,
+      "createdAt": "2026-09-15T13:14:12.733Z",
+      "updatedAt": "2026-09-15T13:14:12.733Z",
+      "instructionsMarkdown": "\n# RHCSA & CLA Module 1 Gradable Tasks\n*Unnati Development and Training Center*\n\nWelcome to your Linux RHCSA & CLA Module 1 practical lab environment. Execute the commands in the terminal window to fulfill all 12 gradable task requirements.\n\n---\n\n## Guided Instructions & Reference Commands\n\n### Task 1: Store Location in File\nCreate `/root/myfile.doc` and store the location of the `/root` directory within it.\n```bash\necho \"/root\" > /root/myfile.doc\n```\n\n### Task 2: Simultaneous File Creation\nGenerate three files `file1`, `file2`, and `file3` simultaneously in the `/root` directory.\n```bash\ntouch /root/file1 /root/file2 /root/file3\n```\n\n### Task 3: Store Current Date\nStore current date in a file named `/date.txt`.\n```bash\ndate > /date.txt\n```\n\n### Task 4: Retrieve `/bin` Directory Listing\nRetrieve a list of files and directories from the `/bin` folder and save it in `/list.txt`.\n```bash\nls /bin > /list.txt\n```\n\n### Task 5: Record User and Working Directory\nRecord the username and the current working directory in `/root/mydata/userfile.txt`.\n```bash\nmkdir -p /root/mydata\necho \"$(whoami) $(pwd)\" > /root/mydata/userfile.txt\n```\n\n### Task 6: Establish Collaborative Directory\nEstablish a collaborative directory at `/root/unnati/cidco/aurangabad`.\n```bash\nmkdir -p /root/unnati/cidco/aurangabad\n```\n\n### Task 7: Generate Multiple Folders\nGenerate ten folders named `linuxdata1` to `linuxdata10` within `/root`.\n```bash\nmkdir -p /root/linuxdata{1..10}\n```\n\n### Task 8: Generate Nested Directory Path & PHP Files\nCreate directory path `/root/data/gdata/reddata` and generate ten files with `.php` extension named `unnati1.php` through `unnati10.php`.\n```bash\nmkdir -p /root/data/gdata/reddata\ntouch /root/data/gdata/reddata/unnati{1..10}.php\n```\n\n### Task 9: Duplicate System Backup File\nDuplicate the file `/etc/fstab` and store the duplicate as `/root/mdata/fstab.backup`.\n```bash\nmkdir -p /root/mdata\ncp /etc/fstab /root/mdata/fstab.backup\n```\n\n### Task 10: Multi-Step App File Creation & Relocation\n1. Create five files `appfile1.xml` through `appfile5.xml` in `/mnt/appdata/`.\n2. Generate five files `appfile1.html` through `appfile5.html` in `/tmp`.\n3. Move all `.xml` files from `/mnt/appdata/` to `/tmp`.\n4. Transfer `appfile1.html` through `appfile5.html` from `/tmp` to `/tmp/kdata`.\n```bash\nmkdir -p /mnt/appdata /tmp/kdata\ntouch /mnt/appdata/appfile{1..5}.xml\ntouch /tmp/appfile{1..5}.html\nmv /mnt/appdata/*.xml /tmp/\nmv /tmp/appfile{1..5}.html /tmp/kdata/\n```\n\n### Task 11: Relocate Backup File\nRelocate the file `/root/mdata/fstab.backup` to `/tmp`.\n```bash\nmv /root/mdata/fstab.backup /tmp/\n```\n\n### Task 12: Hidden Files Creation\nCreate hidden files named `.unnati1.xls` through `.unnati10.xls` within `/root`.\n```bash\ntouch /root/.unnati{1..10}.xls\n```\n      ",
+      "tasks": [
+        {
+          "id": "task-mod1-1",
+          "title": "1. Create /root/myfile.doc with directory path",
+          "description": "Create a file named \"/root/myfile.doc\" and store the location of the \"/root\" directory within it.",
+          "validationScript": "test -f /root/myfile.doc && grep -q \"/root\" /root/myfile.doc"
+        },
+        {
+          "id": "task-mod1-2",
+          "title": "2. Generate file1, file2, file3 simultaneously",
+          "description": "Generate three files \"file1\", \"file2\", and \"file3\" simultaneously in the \"/root\" directory.",
+          "validationScript": "test -f /root/file1 && test -f /root/file2 && test -f /root/file3"
+        },
+        {
+          "id": "task-mod1-3",
+          "title": "3. Store current date in /date.txt",
+          "description": "Store the current date output in a file named \"/date.txt\".",
+          "validationScript": "test -s /date.txt"
+        },
+        {
+          "id": "task-mod1-4",
+          "title": "4. Save /bin listing into /list.txt",
+          "description": "Retrieve a list of files and directories from the \"/bin\" folder and save it in \"/list.txt\".",
+          "validationScript": "test -s /list.txt"
+        },
+        {
+          "id": "task-mod1-5",
+          "title": "5. Record username and working directory",
+          "description": "Record the username and current working directory in \"/root/mydata/userfile.txt\".",
+          "validationScript": "test -s /root/mydata/userfile.txt"
+        },
+        {
+          "id": "task-mod1-6",
+          "title": "6. Establish directory /root/unnati/cidco/aurangabad",
+          "description": "Establish a collaborative directory path at \"/root/unnati/cidco/aurangabad\".",
+          "validationScript": "test -d /root/unnati/cidco/aurangabad"
+        },
+        {
+          "id": "task-mod1-7",
+          "title": "7. Generate linuxdata1 to linuxdata10 folders",
+          "description": "Generate ten folders named \"linuxdata1\" to \"linuxdata10\" within the \"/root\" directory.",
+          "validationScript": "for i in $(seq 1 10); do test -d \"/root/linuxdata$i\" || exit 1; done"
+        },
+        {
+          "id": "task-mod1-8",
+          "title": "8. Create reddata path and unnati1.php..10.php",
+          "description": "Create directory path \"/root/data/gdata/reddata\" and generate ten .php files named \"unnati1.php\" through \"unnati10.php\".",
+          "validationScript": "for i in $(seq 1 10); do test -f \"/root/data/gdata/reddata/unnati$i.php\" || exit 1; done"
+        },
+        {
+          "id": "task-mod1-9",
+          "title": "9. Duplicate /etc/fstab to /root/mdata/fstab.backup",
+          "description": "Duplicate the file \"/etc/fstab\" and store the duplicate as \"/root/mdata/fstab.backup\".",
+          "validationScript": "test -f /root/mdata/fstab.backup"
+        },
+        {
+          "id": "task-mod1-10",
+          "title": "10. Create & relocate XML and HTML app files",
+          "description": "Create appfiles, move XML files to /tmp, and transfer HTML appfiles from /tmp to /tmp/kdata.",
+          "validationScript": "for i in $(seq 1 5); do test -f \"/tmp/appfile$i.xml\" && test -f \"/tmp/kdata/appfile$i.html\" || exit 1; done"
+        },
+        {
+          "id": "task-mod1-11",
+          "title": "11. Relocate fstab.backup to /tmp",
+          "description": "Relocate the file \"/root/mdata/fstab.backup\" to \"/tmp\".",
+          "validationScript": "test -f /tmp/fstab.backup && test ! -f /root/mdata/fstab.backup"
+        },
+        {
+          "id": "task-mod1-12",
+          "title": "12. Create hidden files .unnati1.xls to .unnati10.xls in /root",
+          "description": "Create hidden files named \".unnati1.xls\" through \".unnati10.xls\" within the \"/root\" directory.",
+          "validationScript": "for i in $(seq 1 10); do test -f \"/root/.unnati$i.xls\" || exit 1; done"
+        }
+      ]
+    },
+    {
+      "id": "lab-rhcsa-cla-module2",
+      "slug": "rhcsa-cla-module2",
+      "name": "RHCSA & CLA Module 2 Gradable Tasks",
+      "description": "Unnati Development and Training Center RHCSA+CLA Module 2 practical gradable task suite covering user creation with UIDs/GIDs, group management, GECOS comments, non-interactive shells, secondary group assignments, password aging policies, account locking, and custom home directories.",
+      "category": "Linux",
+      "difficulty": "Intermediate",
+      "durationMinutes": 60,
+      "dockerImage": "ubuntu:latest",
+      "cpuRequest": "250m",
+      "cpuLimit": "1",
+      "memoryRequest": "256Mi",
+      "memoryLimit": "1Gi",
+      "storage": "1Gi",
+      "startupCommand": "/bin/bash",
+      "terminalEnabled": true,
+      "browserAccess": true,
+      "isPublished": true,
+      "createdAt": "2026-09-15T13:14:12.733Z",
+      "updatedAt": "2026-09-15T13:14:12.733Z",
+      "instructionsMarkdown": "\n# RHCSA & CLA Module 2 Gradable Tasks\n*Unnati Development and Training Center Pvt Ltd*\n\nWelcome to your Linux RHCSA & CLA Module 2 practical lab environment. Execute the commands in the terminal window to fulfill all 14 gradable user and group administration task requirements.\n\n---\n\n## Guided Instructions & Reference Commands\n\n### Task 1: Create User \"vinay\" with UID 4353\nCreate a user named `vinay` with the UID set to `4353`.\n```bash\nuseradd -u 4353 vinay\n```\n\n### Task 2: Create User \"kiran\" with GID 2083\nCreate a user named `kiran` with the GID set to `2083`. *(Note: Create group with GID 2083 first)*\n```bash\ngroupadd -g 2083 kiran_grp\nuseradd -g 2083 kiran\n```\n\n### Task 3: Set GECOS Name for \"vinay\"\nSet the GECOS name of the user `vinay` as `developer2`.\n```bash\nusermod -c \"developer2\" vinay\n```\n\n### Task 4: Create Group \"admin_java\"\nCreate a group named `admin_java`.\n```bash\ngroupadd admin_java\n```\n\n### Task 5: Create Group \"ht_java\" with GID 2076\nCreate a group named `ht_java` with the ID set to `2076`.\n```bash\ngroupadd -g 2076 ht_java\n```\n\n### Task 6: Create Group \"myadmin\"\nCreate a group named `myadmin`.\n```bash\ngroupadd myadmin\n```\n\n### Task 7: Create Group \"super_admin\"\nCreate a group named `super_admin`.\n```bash\ngroupadd super_admin\n```\n\n### Task 8: User \"shrikant\" with Secondary Groups\nCreate a user named `shrikant` and add `shrikant` user to `admin_java` and `myadmin` secondary groups.\n```bash\nuseradd -G admin_java,myadmin shrikant\n```\n\n### Task 9: User \"mahesh\" with Secondary Groups\nCreate a user named `mahesh` and add `mahesh` user to `ht_java` and `super_admin` secondary groups.\n```bash\nuseradd -G ht_java,super_admin mahesh\n```\n\n### Task 10: User \"varsha\" with UID 1089, GID 2076, and Non-login Shell\nCreate user `varsha` with UID `1089`, primary group GID `2076` (`ht_java`), and shell `/sbin/nologin`.\n```bash\nuseradd -u 1089 -g 2076 -s /sbin/nologin varsha\n```\n\n### Task 11: Configure Password Max Age Policy for \"vinay\"\nSet the maximum password age policy to `90` days for user `vinay`.\n```bash\nchage -M 90 vinay\n```\n\n### Task 12: Lock User Account \"kiran\"\nLock the user account for `kiran` to disable login access.\n```bash\nusermod -L kiran\n```\n\n### Task 13: Set Account Expiration Date for \"mahesh\"\nSet the account expiration date for user `mahesh` to `2026-12-31`.\n```bash\nchage -E 2026-12-31 mahesh\n```\n\n### Task 14: User \"devops_admin\" with Custom Home Directory\nCreate user `devops_admin` with home directory set to `/home/devops_home`.\n```bash\nuseradd -m -d /home/devops_home devops_admin\n```\n      ",
+      "tasks": [
+        {
+          "id": "task-mod2-1",
+          "title": "1. Create user \"vinay\" with UID 4353",
+          "description": "Create a user named \"vinay\" with the UID set to 4353.",
+          "validationScript": "grep -q \"^vinay:[^:]*:4353:\" /etc/passwd || [ \"$(id -u vinay 2>/dev/null | tr -d \"\\r\\n\")\" = \"4353\" ]"
+        },
+        {
+          "id": "task-mod2-2",
+          "title": "2. Create user \"kiran\" with GID 2083",
+          "description": "Create a user named \"kiran\" with primary GID set to 2083.",
+          "validationScript": "grep -q \"^kiran:[^:]*:[^:]*:2083:\" /etc/passwd || [ \"$(id -g kiran 2>/dev/null | tr -d \"\\r\\n\")\" = \"2083\" ]"
+        },
+        {
+          "id": "task-mod2-3",
+          "title": "3. Set GECOS name of \"vinay\" as \"developer2\"",
+          "description": "Set the GECOS name of the user \"vinay\" as \"developer2\".",
+          "validationScript": "grep -q \"^vinay:[^:]*:[^:]*:[^:]*:developer2\" /etc/passwd || getent passwd vinay 2>/dev/null | grep -q \"developer2\""
+        },
+        {
+          "id": "task-mod2-4",
+          "title": "4. Create group \"admin_java\"",
+          "description": "Create a group named \"admin_java\".",
+          "validationScript": "grep -q \"^admin_java:\" /etc/group || getent group admin_java >/dev/null 2>&1"
+        },
+        {
+          "id": "task-mod2-5",
+          "title": "5. Create group \"ht_java\" with GID 2076",
+          "description": "Create a group named \"ht_java\" with the ID set to 2076.",
+          "validationScript": "grep -q \"^ht_java:[^:]*:2076:\" /etc/group || getent group ht_java 2>/dev/null | grep -q \":2076:\""
+        },
+        {
+          "id": "task-mod2-6",
+          "title": "6. Create group \"myadmin\"",
+          "description": "Create a group named \"myadmin\".",
+          "validationScript": "grep -q \"^myadmin:\" /etc/group || getent group myadmin >/dev/null 2>&1"
+        },
+        {
+          "id": "task-mod2-7",
+          "title": "7. Create group \"super_admin\"",
+          "description": "Create a group named \"super_admin\".",
+          "validationScript": "grep -q \"^super_admin:\" /etc/group || getent group super_admin >/dev/null 2>&1"
+        },
+        {
+          "id": "task-mod2-8",
+          "title": "8. Create user \"shrikant\" with secondary groups \"admin_java\" and \"myadmin\"",
+          "description": "Create a user named \"shrikant\" and add \"shrikant\" user to \"admin_java\" and \"myadmin\" secondary groups.",
+          "validationScript": "id -Gn shrikant 2>/dev/null | grep -q \"admin_java\" && id -Gn shrikant 2>/dev/null | grep -q \"myadmin\""
+        },
+        {
+          "id": "task-mod2-9",
+          "title": "9. Create user \"mahesh\" with secondary groups \"ht_java\" and \"super_admin\"",
+          "description": "Create a user named \"mahesh\" and add \"mahesh\" user to \"ht_java\" and \"super_admin\" secondary groups.",
+          "validationScript": "id -Gn mahesh 2>/dev/null | grep -q \"ht_java\" && id -Gn mahesh 2>/dev/null | grep -q \"super_admin\""
+        },
+        {
+          "id": "task-mod2-10",
+          "title": "10. Create user \"varsha\" with UID 1089, GID 2076, and /sbin/nologin shell",
+          "description": "Create user \"varsha\" with UID 1089, primary group GID 2076 (ht_java), and shell \"/sbin/nologin\".",
+          "validationScript": "grep -q \"^varsha:[^:]*:1089:2076:\" /etc/passwd && getent passwd varsha 2>/dev/null | grep -q \"nologin\""
+        },
+        {
+          "id": "task-mod2-11",
+          "title": "11. Configure password max age to 90 days for user \"vinay\"",
+          "description": "Set the maximum password age policy to 90 days for user \"vinay\".",
+          "validationScript": "getent shadow vinay 2>/dev/null | cut -d: -f5 | grep -q \"^90$\" || chage -l vinay 2>/dev/null | grep -q \"90\""
+        },
+        {
+          "id": "task-mod2-12",
+          "title": "12. Lock user account \"kiran\"",
+          "description": "Lock the user account for \"kiran\" to disable login access.",
+          "validationScript": "getent shadow kiran 2>/dev/null | cut -d: -f2 | grep -q \"!\" || passwd -S kiran 2>/dev/null | grep -qE \"L|locked\""
+        },
+        {
+          "id": "task-mod2-13",
+          "title": "13. Set account expiration date for user \"mahesh\"",
+          "description": "Set the account expiration date for user \"mahesh\" to 2026-12-31.",
+          "validationScript": "chage -l mahesh 2>/dev/null | grep -i \"expires\" | grep -v \"never\" || getent shadow mahesh 2>/dev/null | cut -d: -f8 | grep -q \"[0-9]\""
+        },
+        {
+          "id": "task-mod2-14",
+          "title": "14. Create user \"devops_admin\" with custom home directory /home/devops_home",
+          "description": "Create user \"devops_admin\" with home directory set to \"/home/devops_home\".",
+          "validationScript": "grep -q \"devops_admin.*:/home/devops_home:\" /etc/passwd || getent passwd devops_admin 2>/dev/null | grep -q \"/home/devops_home\""
         }
       ]
     }

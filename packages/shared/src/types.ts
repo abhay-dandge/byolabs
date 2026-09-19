@@ -8,6 +8,7 @@ export interface User {
   username: string;
   role: UserRole;
   status: UserStatus;
+  monthlyQuotaHours?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -81,10 +82,27 @@ export interface LabSession {
   errorMessage?: string;
   createdAt: string;
   startedAt?: string;
+  endedAt?: string;
   expiresAt?: string;
   lastActivityAt?: string;
   completedTasks: string[];
   isSandbox?: boolean;
+}
+
+export interface UserUsageReport {
+  userId: string;
+  userName: string;
+  userEmail: string;
+  username: string;
+  monthlyQuotaHours: number;
+  isCustomQuota: boolean;
+  usedMinutes: number;
+  usedHours: number;
+  remainingMinutes: number;
+  remainingHours: number;
+  percentUsed: number;
+  isExceeded: boolean;
+  activeSessionsCount: number;
 }
 
 export interface NodeMetrics {
@@ -94,6 +112,27 @@ export interface NodeMetrics {
   cpuUsage: string;
   memoryUsage: string;
   podsCount: number;
+}
+
+export interface ClusterInfo {
+  id: string;
+  name: string;
+  region: string;
+  type: 'Production K8s Cluster' | 'Development / Sandbox Cluster';
+  controlPlaneReady: boolean;
+  activeLabsCount: number;
+  maxLabsCapacity: number;
+  nodes: NodeMetrics[];
+  totalCpuUsagePercent: number;
+  totalMemoryUsagePercent: number;
+}
+
+export interface MultiClusterStatus {
+  clusters: ClusterInfo[];
+  totalActiveLabsCount: number;
+  totalMaxCapacity: number;
+  overallCpuUsagePercent: number;
+  overallMemoryUsagePercent: number;
 }
 
 export interface ClusterStatus {
@@ -128,6 +167,7 @@ export interface SystemSettings {
   maxClusterLabs: number;
   defaultLabTimeoutMinutes: number;
   defaultIdleTimeoutMinutes: number;
+  defaultMonthlyQuotaHours: number;
   requireAdminApproval: boolean;
 }
 

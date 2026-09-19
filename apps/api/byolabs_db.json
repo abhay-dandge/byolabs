@@ -44,8 +44,8 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-09-15T13:14:12.733Z",
-      "updatedAt": "2026-09-15T13:14:12.733Z",
+      "createdAt": "2026-09-19T05:21:02.220Z",
+      "updatedAt": "2026-09-19T05:21:02.220Z",
       "instructionsMarkdown": "\n# Ubuntu 24.04 Playground\n\nWelcome to your isolated **Ubuntu 24.04** container environment running as a Kubernetes pod.\n\n## Prerequisites & Tools\nThis container comes pre-configured with:\n- `bash`\n- `curl`, `wget`, `git`\n- `iproute2` (`ip a`, `ip route`), `net-tools`\n- `procps` (`ps aux`, `top`)\n- `vim`, `nano`\n\n---\n\n## Guided Exercises\n\n### Step 1: Inspect System Release & Kernel\nRun the following command in the interactive terminal on the right to view your OS version:\n\n```bash\ncat /etc/os-release\nuname -a\n```\n\n### Step 2: Working Directory & Environment Variables\nCheck your current working directory and active shell environment:\n\n```bash\npwd\nwhoami\nenv | grep USER\n```\n\n### Step 3: Create a DevOps Workspace Directory\nCreate a directory named `devops` in your home directory:\n\n```bash\nmkdir -p ~/devops && cd ~/devops\npwd\n```\n\n---\n\n## Tasks Checklist\n      ",
       "tasks": [
         {
@@ -85,8 +85,8 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-09-15T13:14:12.733Z",
-      "updatedAt": "2026-09-15T13:14:12.733Z",
+      "createdAt": "2026-09-19T05:21:02.220Z",
+      "updatedAt": "2026-09-19T05:21:02.220Z",
       "instructionsMarkdown": "\n# Linux Fundamentals & File System Permissions\n\nLearn essential file ownership and permission control in Linux environments.\n\n## Quick Commands\n- `chmod 755 filename`\n- `chown user:group filename`\n- `ls -la`\n\n```bash\ntouch sample.sh\nchmod +x sample.sh\n./sample.sh\n```\n      ",
       "tasks": [
         {
@@ -115,8 +115,8 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-09-15T13:14:12.733Z",
-      "updatedAt": "2026-09-15T13:14:12.733Z",
+      "createdAt": "2026-09-19T05:21:02.220Z",
+      "updatedAt": "2026-09-19T05:21:02.220Z",
       "instructionsMarkdown": "\n# Docker Playground (Ubuntu 24.04 Engine)\n\nWelcome to your isolated **Docker Playground** running on **Ubuntu 24.04 LTS**!\n\n---\n\n## Environment Architecture\n- **Operating System**: Ubuntu 24.04 LTS\n- **Docker Engine**: Installed automatically on boot via official `curl -fsSL https://get.docker.com | sh` script\n- **Daemon**: `dockerd` running natively in background with full container creation capability\n\n---\n\n## Guided Exercises\n\n### Step 1: Verify Installed Docker Engine & Daemon\nVerify CLI communication with the Docker daemon:\n\n```bash\ndocker version\ndocker info\n```\n\n### Step 2: Test Container Lifecycle & Hello-World\nRun a lightweight `hello-world` container:\n\n```bash\ndocker run hello-world\n```\n\n### Step 3: Pull & Inspect Alpine Linux Image\nPull the official `alpine` image:\n\n```bash\ndocker pull alpine\ndocker images\n```\n\n---\n\n## Tasks Checklist\n      ",
       "tasks": [
         {
@@ -156,8 +156,8 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-09-15T13:14:12.733Z",
-      "updatedAt": "2026-09-15T13:14:12.733Z",
+      "createdAt": "2026-09-19T05:21:02.220Z",
+      "updatedAt": "2026-09-19T05:21:02.220Z",
       "instructionsMarkdown": "\n# Kubernetes Basics & Workloads\n\nLearn how Kubernetes manifests configure Pod specs and deployments.\n\n```bash\ncat << 'EOF' > pod.yaml\napiVersion: v1\nkind: Pod\nmetadata:\n  name: nginx-pod\nspec:\n  containers:\n  - name: nginx\n    image: nginx:alpine\nEOF\ncat pod.yaml\n```\n      ",
       "tasks": [
         {
@@ -185,8 +185,8 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-09-15T13:14:12.733Z",
-      "updatedAt": "2026-09-15T13:14:12.733Z",
+      "createdAt": "2026-09-19T05:21:02.220Z",
+      "updatedAt": "2026-09-19T05:21:02.220Z",
       "instructionsMarkdown": "\n# Git Branching & Version Control\n\nPractice initializing repositories and managing branches.\n\n```bash\nmkdir my-repo && cd my-repo\ngit init\ngit config user.name \"Student\"\ngit config user.email \"student@byolabs.in\"\necho \"Initial commit\" > README.md\ngit add .\ngit commit -m \"Initial commit\"\n```\n      ",
       "tasks": [
         {
@@ -215,9 +215,9 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-09-15T13:14:12.733Z",
-      "updatedAt": "2026-09-15T13:14:12.733Z",
-      "instructionsMarkdown": "\n# RHCSA & CLA Module 1 Gradable Tasks\n*Unnati Development and Training Center*\n\nWelcome to your Linux RHCSA & CLA Module 1 practical lab environment. Execute the commands in the terminal window to fulfill all 12 gradable task requirements.\n\n---\n\n## Guided Instructions & Reference Commands\n\n### Task 1: Store Location in File\nCreate `/root/myfile.doc` and store the location of the `/root` directory within it.\n```bash\necho \"/root\" > /root/myfile.doc\n```\n\n### Task 2: Simultaneous File Creation\nGenerate three files `file1`, `file2`, and `file3` simultaneously in the `/root` directory.\n```bash\ntouch /root/file1 /root/file2 /root/file3\n```\n\n### Task 3: Store Current Date\nStore current date in a file named `/date.txt`.\n```bash\ndate > /date.txt\n```\n\n### Task 4: Retrieve `/bin` Directory Listing\nRetrieve a list of files and directories from the `/bin` folder and save it in `/list.txt`.\n```bash\nls /bin > /list.txt\n```\n\n### Task 5: Record User and Working Directory\nRecord the username and the current working directory in `/root/mydata/userfile.txt`.\n```bash\nmkdir -p /root/mydata\necho \"$(whoami) $(pwd)\" > /root/mydata/userfile.txt\n```\n\n### Task 6: Establish Collaborative Directory\nEstablish a collaborative directory at `/root/unnati/cidco/aurangabad`.\n```bash\nmkdir -p /root/unnati/cidco/aurangabad\n```\n\n### Task 7: Generate Multiple Folders\nGenerate ten folders named `linuxdata1` to `linuxdata10` within `/root`.\n```bash\nmkdir -p /root/linuxdata{1..10}\n```\n\n### Task 8: Generate Nested Directory Path & PHP Files\nCreate directory path `/root/data/gdata/reddata` and generate ten files with `.php` extension named `unnati1.php` through `unnati10.php`.\n```bash\nmkdir -p /root/data/gdata/reddata\ntouch /root/data/gdata/reddata/unnati{1..10}.php\n```\n\n### Task 9: Duplicate System Backup File\nDuplicate the file `/etc/fstab` and store the duplicate as `/root/mdata/fstab.backup`.\n```bash\nmkdir -p /root/mdata\ncp /etc/fstab /root/mdata/fstab.backup\n```\n\n### Task 10: Multi-Step App File Creation & Relocation\n1. Create five files `appfile1.xml` through `appfile5.xml` in `/mnt/appdata/`.\n2. Generate five files `appfile1.html` through `appfile5.html` in `/tmp`.\n3. Move all `.xml` files from `/mnt/appdata/` to `/tmp`.\n4. Transfer `appfile1.html` through `appfile5.html` from `/tmp` to `/tmp/kdata`.\n```bash\nmkdir -p /mnt/appdata /tmp/kdata\ntouch /mnt/appdata/appfile{1..5}.xml\ntouch /tmp/appfile{1..5}.html\nmv /mnt/appdata/*.xml /tmp/\nmv /tmp/appfile{1..5}.html /tmp/kdata/\n```\n\n### Task 11: Relocate Backup File\nRelocate the file `/root/mdata/fstab.backup` to `/tmp`.\n```bash\nmv /root/mdata/fstab.backup /tmp/\n```\n\n### Task 12: Hidden Files Creation\nCreate hidden files named `.unnati1.xls` through `.unnati10.xls` within `/root`.\n```bash\ntouch /root/.unnati{1..10}.xls\n```\n      ",
+      "createdAt": "2026-09-19T05:21:02.220Z",
+      "updatedAt": "2026-09-19T05:21:02.220Z",
+      "instructionsMarkdown": "\n# RHCSA & CLA Module 1 Gradable Tasks\n*Unnati Development and Training Center*\n\nWelcome to your Linux RHCSA & CLA Module 1 practical lab environment. Execute the commands in the terminal window to fulfill all 12 gradable task requirements.\n      ",
       "tasks": [
         {
           "id": "task-mod1-1",
@@ -311,9 +311,9 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-09-15T13:14:12.733Z",
-      "updatedAt": "2026-09-15T13:14:12.733Z",
-      "instructionsMarkdown": "\n# RHCSA & CLA Module 2 Gradable Tasks\n*Unnati Development and Training Center Pvt Ltd*\n\nWelcome to your Linux RHCSA & CLA Module 2 practical lab environment. Execute the commands in the terminal window to fulfill all 14 gradable user and group administration task requirements.\n\n---\n\n## Guided Instructions & Reference Commands\n\n### Task 1: Create User \"vinay\" with UID 4353\nCreate a user named `vinay` with the UID set to `4353`.\n```bash\nuseradd -u 4353 vinay\n```\n\n### Task 2: Create User \"kiran\" with GID 2083\nCreate a user named `kiran` with the GID set to `2083`. *(Note: Create group with GID 2083 first)*\n```bash\ngroupadd -g 2083 kiran_grp\nuseradd -g 2083 kiran\n```\n\n### Task 3: Set GECOS Name for \"vinay\"\nSet the GECOS name of the user `vinay` as `developer2`.\n```bash\nusermod -c \"developer2\" vinay\n```\n\n### Task 4: Create Group \"admin_java\"\nCreate a group named `admin_java`.\n```bash\ngroupadd admin_java\n```\n\n### Task 5: Create Group \"ht_java\" with GID 2076\nCreate a group named `ht_java` with the ID set to `2076`.\n```bash\ngroupadd -g 2076 ht_java\n```\n\n### Task 6: Create Group \"myadmin\"\nCreate a group named `myadmin`.\n```bash\ngroupadd myadmin\n```\n\n### Task 7: Create Group \"super_admin\"\nCreate a group named `super_admin`.\n```bash\ngroupadd super_admin\n```\n\n### Task 8: User \"shrikant\" with Secondary Groups\nCreate a user named `shrikant` and add `shrikant` user to `admin_java` and `myadmin` secondary groups.\n```bash\nuseradd -G admin_java,myadmin shrikant\n```\n\n### Task 9: User \"mahesh\" with Secondary Groups\nCreate a user named `mahesh` and add `mahesh` user to `ht_java` and `super_admin` secondary groups.\n```bash\nuseradd -G ht_java,super_admin mahesh\n```\n\n### Task 10: User \"varsha\" with UID 1089, GID 2076, and Non-login Shell\nCreate user `varsha` with UID `1089`, primary group GID `2076` (`ht_java`), and shell `/sbin/nologin`.\n```bash\nuseradd -u 1089 -g 2076 -s /sbin/nologin varsha\n```\n\n### Task 11: Configure Password Max Age Policy for \"vinay\"\nSet the maximum password age policy to `90` days for user `vinay`.\n```bash\nchage -M 90 vinay\n```\n\n### Task 12: Lock User Account \"kiran\"\nLock the user account for `kiran` to disable login access.\n```bash\nusermod -L kiran\n```\n\n### Task 13: Set Account Expiration Date for \"mahesh\"\nSet the account expiration date for user `mahesh` to `2026-12-31`.\n```bash\nchage -E 2026-12-31 mahesh\n```\n\n### Task 14: User \"devops_admin\" with Custom Home Directory\nCreate user `devops_admin` with home directory set to `/home/devops_home`.\n```bash\nuseradd -m -d /home/devops_home devops_admin\n```\n      ",
+      "createdAt": "2026-09-19T05:21:02.220Z",
+      "updatedAt": "2026-09-19T05:21:02.220Z",
+      "instructionsMarkdown": "\n# RHCSA & CLA Module 2 Gradable Tasks\n*Unnati Development and Training Center Pvt Ltd*\n\nWelcome to your Linux RHCSA & CLA Module 2 practical lab environment. Execute the commands in the terminal window to fulfill all 14 gradable user and group administration task requirements.\n      ",
       "tasks": [
         {
           "id": "task-mod2-1",
@@ -418,9 +418,59 @@
       "lastActivityAt": "2026-08-17T06:42:22.492Z",
       "completedTasks": [],
       "errorMessage": "Idle timeout exceeded (No terminal activity)"
+    },
+    {
+      "id": "lab-21f3c912",
+      "userId": "usr-admin-001",
+      "labId": "lab-ubuntu-playground",
+      "labName": "Ubuntu Playground",
+      "labSlug": "ubuntu-playground",
+      "namespace": "lab-session-21f3c912",
+      "podName": "pod-ubuntu-playground-21f3c912",
+      "status": "RUNNING",
+      "createdAt": "2026-09-19T05:24:17.354Z",
+      "startedAt": "2026-09-19T05:24:17.354Z",
+      "expiresAt": "2026-09-19T06:24:17.354Z",
+      "lastActivityAt": "2026-09-19T05:25:25.614Z",
+      "completedTasks": []
     }
   ],
   "logs": [
+    {
+      "id": "log-1789795525612-kakb",
+      "timestamp": "2026-09-19T05:25:25.612Z",
+      "level": "info",
+      "source": "TerminalGateway",
+      "message": "User usr-admin-001 connected to session lab-21f3c912"
+    },
+    {
+      "id": "log-1789795525568-skhu",
+      "timestamp": "2026-09-19T05:25:25.568Z",
+      "level": "info",
+      "source": "TerminalGateway",
+      "message": "User usr-admin-001 connected to session lab-21f3c912"
+    },
+    {
+      "id": "log-1789795525504-dnlc",
+      "timestamp": "2026-09-19T05:25:25.504Z",
+      "level": "info",
+      "source": "Provisioner",
+      "message": "K8s Pod pod-ubuntu-playground-21f3c912 is RUNNING on Autopilot GKE (autopilot-cluster-2-spot) (namespace lab-session-21f3c912)"
+    },
+    {
+      "id": "log-1789795457357-clkr",
+      "timestamp": "2026-09-19T05:24:17.357Z",
+      "level": "info",
+      "source": "Provisioner",
+      "message": "Targeting Autopilot GKE (autopilot-cluster-2-spot) for session lab-21f3c912"
+    },
+    {
+      "id": "log-1789795457356-3gjj",
+      "timestamp": "2026-09-19T05:24:17.356Z",
+      "level": "info",
+      "source": "Provisioner",
+      "message": "Starting provisioning for session lab-21f3c912 (Ubuntu Playground)"
+    },
     {
       "id": "log-1786950749197-qfh7",
       "timestamp": "2026-08-17T07:12:29.197Z",
@@ -466,6 +516,22 @@
   ],
   "auditLogs": [
     {
+      "id": "audit-1789795457354-zzyy",
+      "userId": "usr-admin-001",
+      "userEmail": "admin@byolabs.in",
+      "action": "Start Lab",
+      "details": "Started lab Ubuntu Playground (Session: lab-21f3c912)",
+      "timestamp": "2026-09-19T05:24:17.354Z"
+    },
+    {
+      "id": "audit-1789795373791-ickp",
+      "userId": "usr-admin-001",
+      "userEmail": "admin@byolabs.in",
+      "action": "User Login",
+      "details": "Logged in successfully",
+      "timestamp": "2026-09-19T05:22:53.791Z"
+    },
+    {
       "id": "audit-1786948940879-ln5v",
       "userId": "usr-admin-001",
       "userEmail": "admin@byolabs.in",
@@ -503,6 +569,7 @@
     "maxClusterLabs": 50,
     "defaultLabTimeoutMinutes": 60,
     "defaultIdleTimeoutMinutes": 30,
-    "requireAdminApproval": true
+    "requireAdminApproval": true,
+    "defaultMonthlyQuotaHours": 30
   }
 }

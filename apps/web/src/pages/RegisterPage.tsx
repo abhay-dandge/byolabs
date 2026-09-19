@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { Terminal, Lock, Mail, User as UserIcon, AlertCircle, CheckCircle2 } from 'lucide-react';
+import byolabsLogo from '../assets/byolabs-logo.png';
 
 export const RegisterPage: React.FC = () => {
   const [name, setName] = useState('');
@@ -33,8 +34,8 @@ export const RegisterPage: React.FC = () => {
     <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 bg-slate-900/80 p-8 rounded-2xl border border-slate-800 shadow-2xl glass-panel">
         <div className="text-center">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-cyan-500/20">
-            <Terminal className="w-6 h-6 text-white" />
+          <div className="bg-white/95 px-3 py-2 rounded-xl inline-block mx-auto mb-4 shadow-lg shadow-cyan-500/10">
+            <img src={byolabsLogo} alt="BYOLabs.in" className="h-9 object-contain" />
           </div>
           <h2 className="text-2xl font-extrabold text-white tracking-tight">Create BYOLabs Account</h2>
           <p className="mt-2 text-xs text-slate-400">Join the interactive DevOps & Linux lab platform</p>

@@ -20,6 +20,12 @@ router.get('/my-labs/active', authenticate, (req: AuthenticatedRequest, res: Res
   return res.json({ sessions: active });
 });
 
+// GET /api/v1/labs/my-usage — Get current user's monthly lab usage report
+router.get('/my-usage', authenticate, (req: AuthenticatedRequest, res: Response) => {
+  const usage = db.getUserMonthlyUsage(req.user!.id);
+  return res.json({ usage });
+});
+
 // GET /api/v1/labs/:id — Get details of a single lab
 router.get('/:id', (req, res) => {
   const lab = db.getLabById(req.params.id);
@@ -50,6 +56,14 @@ router.post('/:id/start', authenticate, async (req: AuthenticatedRequest, res: R
 
     if (!lab) {
       return res.status(404).json({ error: 'Lab not found' });
+    }
+
+    // 0. Check monthly usage quota limit (Default 30 hours per user / custom user quota)
+    const usage = db.getUserMonthlyUsage(user.id);
+    if (usage.isExceeded) {
+      return res.status(403).json({
+        error: `Monthly lab usage quota limit reached (${usage.usedHours} hrs used of ${usage.monthlyQuotaHours} hrs allowed). Please contact an administrator to request additional time.`,
+      });
     }
 
     const settings = db.getSettings();
@@ -143,6 +157,7 @@ router.post('/sessions/:sessionId/stop', authenticate, async (req: Authenticated
     await k8sProvisioner.deleteLab(session);
 
     session.status = 'STOPPED';
+    session.endedAt = new Date().toISOString();
     db.updateSession(session);
     db.addAuditLog(req.user!.id, req.user!.email, 'Stop Lab', `Stopped lab session ${session.id}`);
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Terminal, Shield, LogOut, LayoutDashboard, BookOpen, UserCheck } from 'lucide-react';
+import byolabsLogo from '../assets/byolabs-logo.png';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -18,14 +19,11 @@ export const Navbar: React.FC = () => {
         <div className="flex items-center justify-between h-16">
           {/* Brand Logo */}
           <Link to="/" className="flex items-center space-x-3 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
-              <Terminal className="w-5 h-5 text-white" />
+            <div className="bg-white/95 px-2.5 py-1 rounded-xl shadow-md shadow-cyan-500/10 group-hover:scale-105 transition-transform flex items-center justify-center">
+              <img src={byolabsLogo} alt="BYOLabs.in" className="h-7 sm:h-8 object-contain" />
             </div>
-            <div className="flex flex-col">
-              <span className="font-extrabold text-lg text-white tracking-tight flex items-center">
-                BYOLabs<span className="text-cyan-400">.in</span>
-              </span>
-              <span className="text-[10px] font-mono text-slate-400 tracking-wider uppercase -mt-1">
+            <div className="hidden sm:flex flex-col">
+              <span className="text-[10px] font-mono text-slate-400 tracking-wider uppercase">
                 Kubernetes Pod Labs
               </span>
             </div>

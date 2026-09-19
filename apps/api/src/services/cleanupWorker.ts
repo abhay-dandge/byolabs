@@ -34,6 +34,15 @@ export function startCleanupWorker(intervalMs: number = 30000) {
           }
         }
 
+        // 3. Check Monthly Lab Usage Quota Exceeded
+        if (!isExpired) {
+          const usage = db.getUserMonthlyUsage(session.userId);
+          if (usage.isExceeded) {
+            isExpired = true;
+            reason = `Monthly lab usage quota limit reached (${usage.usedHours} hrs used of ${usage.monthlyQuotaHours} hrs allowed)`;
+          }
+        }
+
         if (isExpired) {
           console.log(`[CleanupWorker] Expiring session ${session.id}: ${reason}`);
           db.addLog('info', 'CleanupWorker', `Expiring session ${session.id}: ${reason}`);

@@ -16,6 +16,75 @@ router.get('/users', (req, res) => {
   return res.json({ users });
 });
 
+router.get('/users/usage', (req, res) => {
+  const usageReports = db.getAllUsersUsageReport();
+  return res.json({ usageReports });
+});
+
+router.put('/users/:id/quota', (req: AuthenticatedRequest, res: Response) => {
+  const user = db.getUserById(req.params.id);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+
+  const { monthlyQuotaHours } = req.body;
+  if (typeof monthlyQuotaHours !== 'number' || monthlyQuotaHours < 0) {
+    return res.status(400).json({ error: 'Valid non-negative monthlyQuotaHours is required' });
+  }
+
+  const prevQuota = user.monthlyQuotaHours !== undefined ? `${user.monthlyQuotaHours} hrs` : 'Default (30 hrs)';
+  user.monthlyQuotaHours = monthlyQuotaHours;
+  user.updatedAt = new Date().toISOString();
+  db.updateUser(user);
+
+  db.addAuditLog(
+    req.user!.id,
+    req.user!.email,
+    'Update User Quota',
+    `Updated lab usage quota for ${user.email} from ${prevQuota} to ${monthlyQuotaHours} hrs`
+  );
+
+  return res.json({
+    message: `Lab usage limit for ${user.name} updated to ${monthlyQuotaHours} hours/month`,
+    user,
+    usage: db.getUserMonthlyUsage(user.id),
+  });
+});
+
+router.post('/users/quota/bulk', (req: AuthenticatedRequest, res: Response) => {
+  const { defaultMonthlyQuotaHours, applyToAllUsers } = req.body;
+
+  if (typeof defaultMonthlyQuotaHours === 'number' && defaultMonthlyQuotaHours >= 0) {
+    db.updateSettings({ defaultMonthlyQuotaHours });
+  }
+
+  if (applyToAllUsers && typeof defaultMonthlyQuotaHours === 'number') {
+    const users = db.getUsers();
+    for (const u of users) {
+      u.monthlyQuotaHours = defaultMonthlyQuotaHours;
+      u.updatedAt = new Date().toISOString();
+      db.updateUser(u);
+    }
+    db.addAuditLog(
+      req.user!.id,
+      req.user!.email,
+      'Bulk Update Quota',
+      `Applied ${defaultMonthlyQuotaHours} hrs monthly lab quota to all existing users`
+    );
+  } else {
+    db.addAuditLog(
+      req.user!.id,
+      req.user!.email,
+      'Update Global Default Quota',
+      `Updated platform default monthly lab quota to ${defaultMonthlyQuotaHours} hrs`
+    );
+  }
+
+  return res.json({
+    message: `Monthly quota updated successfully`,
+    settings: db.getSettings(),
+    usageReports: db.getAllUsersUsageReport(),
+  });
+});
+
 router.post('/users/:id/approve', (req: AuthenticatedRequest, res: Response) => {
   const user = db.getUserById(req.params.id);
   if (!user) return res.status(404).json({ error: 'User not found' });
@@ -169,38 +238,98 @@ router.post('/running-labs/:sessionId/stop', async (req: AuthenticatedRequest, r
   return res.json({ message: `Session ${session.id} force-stopped successfully` });
 });
 
+router.post('/users/approve-all', (req: AuthenticatedRequest, res: Response) => {
+  const pendingUsers = db.getUsers().filter((u) => u.status === 'PENDING');
+  for (const u of pendingUsers) {
+    u.status = 'APPROVED';
+    u.updatedAt = new Date().toISOString();
+    db.updateUser(u);
+  }
+  db.addAuditLog(
+    req.user!.id,
+    req.user!.email,
+    'Approve All Users',
+    `Approved all ${pendingUsers.length} pending user registration requests`
+  );
+  return res.json({
+    message: `Successfully approved all ${pendingUsers.length} pending user requests`,
+    approvedCount: pendingUsers.length,
+  });
+});
+
 // ================= CLUSTER HEALTH & SYSTEM STATUS ================= //
 router.get('/cluster', (req, res) => {
   const activeSessions = db.getSessions().filter((s) => s.status === 'RUNNING' || s.status === 'STARTING');
   const isK8s = k8sProvisioner.getIsK8sAvailable();
 
-  const clusterStatus: ClusterStatus = {
+  const totalMaxCapacity = db.getSettings().maxClusterLabs || 50;
+  const c1Active = Math.ceil(activeSessions.length / 2);
+  const c2Active = activeSessions.length - c1Active;
+
+  const cluster1 = {
+    id: 'cluster-01-prod',
+    name: 'Cluster 1 — Production K8s Primary',
+    region: 'us-east-1 (Primary)',
+    type: 'Production K8s Cluster',
     controlPlaneReady: true,
-    activeLabsCount: activeSessions.length,
-    maxLabsCapacity: db.getSettings().maxClusterLabs,
+    activeLabsCount: c1Active,
+    maxLabsCapacity: Math.ceil(totalMaxCapacity / 2),
     nodes: [
       {
-        name: 'master-node-01',
+        name: 'prod-k8s-master-01',
         status: 'Ready',
         role: 'control-plane',
-        cpuUsage: '22%',
-        memoryUsage: '38%',
-        podsCount: activeSessions.length + 5,
+        cpuUsage: '32%',
+        memoryUsage: '44%',
+        podsCount: c1Active + 6,
       },
       {
-        name: 'worker-node-01',
+        name: 'prod-k8s-worker-01',
         status: 'Ready',
         role: 'worker',
-        cpuUsage: '45%',
-        memoryUsage: '52%',
-        podsCount: activeSessions.length,
+        cpuUsage: '54%',
+        memoryUsage: '60%',
+        podsCount: c1Active,
       },
     ],
-    totalCpuUsagePercent: 34,
-    totalMemoryUsagePercent: 45,
+    totalCpuUsagePercent: 43,
+    totalMemoryUsagePercent: 52,
   };
 
-  return res.json({ cluster: clusterStatus, isK8sAvailable: isK8s });
+  const cluster2 = {
+    id: 'cluster-02-dev',
+    name: 'Cluster 2 — Secondary K8s Sandbox',
+    region: 'ap-south-1 (Secondary)',
+    type: 'Development / Sandbox Cluster',
+    controlPlaneReady: true,
+    activeLabsCount: c2Active,
+    maxLabsCapacity: Math.floor(totalMaxCapacity / 2),
+    nodes: [
+      {
+        name: 'sandbox-k8s-master-01',
+        status: 'Ready',
+        role: 'control-plane',
+        cpuUsage: '18%',
+        memoryUsage: '28%',
+        podsCount: c2Active + 4,
+      },
+      {
+        name: 'sandbox-k8s-worker-01',
+        status: 'Ready',
+        role: 'worker',
+        cpuUsage: '30%',
+        memoryUsage: '36%',
+        podsCount: c2Active,
+      },
+    ],
+    totalCpuUsagePercent: 24,
+    totalMemoryUsagePercent: 32,
+  };
+
+  return res.json({
+    clusters: [cluster1, cluster2],
+    isK8sAvailable: isK8s,
+  });
 });
 
 router.get('/logs', (req, res) => {

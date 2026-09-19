@@ -1,4 +1,4 @@
-import { User, Lab, LabSession, ClusterStatus, SystemLog, AuditLog, SystemSettings } from '@byolabs/shared';
+import { User, Lab, LabSession, ClusterStatus, ClusterInfo, SystemLog, AuditLog, SystemSettings, UserUsageReport } from '@byolabs/shared';
 
 const API_BASE = '/api/v1';
 
@@ -48,6 +48,7 @@ export const api = {
   getLabs: () => request<{ labs: Lab[] }>('/labs'),
   getLabById: (id: string) => request<{ lab: Lab }>(`/labs/${id}`),
   getMyActiveSessions: () => request<{ sessions: LabSession[] }>('/labs/my-labs/active'),
+  getMyUsage: () => request<{ usage: UserUsageReport }>('/labs/my-usage'),
   getSession: (sessionId: string) => request<{ session: LabSession; lab: Lab }>(`/labs/sessions/${sessionId}`),
   startLab: (labId: string) => request<{ message: string; session: LabSession }>(`/labs/${labId}/start`, { method: 'POST' }),
   stopLab: (sessionId: string) => request<{ message: string; session: LabSession }>(`/labs/sessions/${sessionId}/stop`, { method: 'POST' }),
@@ -56,7 +57,11 @@ export const api = {
 
   // Admin
   getUsers: () => request<{ users: User[] }>('/admin/users'),
+  getUsersUsage: () => request<{ usageReports: UserUsageReport[] }>('/admin/users/usage'),
+  updateUserQuota: (userId: string, monthlyQuotaHours: number) => request<{ message: string; user: User; usage: UserUsageReport }>(`/admin/users/${userId}/quota`, { method: 'PUT', body: JSON.stringify({ monthlyQuotaHours }) }),
+  bulkUpdateQuota: (defaultMonthlyQuotaHours: number, applyToAllUsers?: boolean) => request<{ message: string; settings: SystemSettings; usageReports: UserUsageReport[] }>('/admin/users/quota/bulk', { method: 'POST', body: JSON.stringify({ defaultMonthlyQuotaHours, applyToAllUsers }) }),
   approveUser: (id: string) => request<{ message: string; user: User }>(`/admin/users/${id}/approve`, { method: 'POST' }),
+  approveAllUsers: () => request<{ message: string; approvedCount: number }>('/admin/users/approve-all', { method: 'POST' }),
   rejectUser: (id: string) => request<{ message: string; user: User }>(`/admin/users/${id}/reject`, { method: 'POST' }),
   suspendUser: (id: string) => request<{ message: string; user: User }>(`/admin/users/${id}/suspend`, { method: 'POST' }),
   reactivateUser: (id: string) => request<{ message: string; user: User }>(`/admin/users/${id}/reactivate`, { method: 'POST' }),
@@ -70,7 +75,7 @@ export const api = {
   getRunningLabs: () => request<{ sessions: (LabSession & { userEmail: string; username: string })[] }>('/admin/running-labs'),
   forceStopSession: (sessionId: string) => request<{ message: string }>(`/admin/running-labs/${sessionId}/stop`, { method: 'POST' }),
 
-  getClusterStatus: () => request<{ cluster: ClusterStatus; isK8sAvailable: boolean }>('/admin/cluster'),
+  getClusterStatus: () => request<{ clusters: ClusterInfo[]; isK8sAvailable: boolean }>('/admin/cluster'),
   getLogs: () => request<{ logs: SystemLog[] }>('/admin/logs'),
   getAuditLogs: () => request<{ auditLogs: AuditLog[] }>('/admin/audit'),
   getSettings: () => request<{ settings: SystemSettings }>('/admin/settings'),

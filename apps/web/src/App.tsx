@@ -9,6 +9,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { LabsCatalogPage } from './pages/LabsCatalogPage';
 import { LabWorkspacePage } from './pages/LabWorkspacePage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import { CertificatePreviewPage } from './pages/CertificatePreviewPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; requireAdmin?: boolean }> = ({
   children,
@@ -42,6 +43,7 @@ export const App: React.FC = () => {
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/certificate-preview" element={<CertificatePreviewPage />} />
               <Route path="/labs" element={<LabsCatalogPage />} />
 
               <Route

@@ -108,36 +108,43 @@ export const InstructionsPanel: React.FC<InstructionsPanelProps> = ({ lab, sessi
       <div className="flex-1 overflow-y-auto p-5 space-y-6 text-sm leading-relaxed font-sans">
         {/* Render Instructions Text */}
         <div className="prose prose-invert max-w-none space-y-4">
-          {lab.instructionsMarkdown.split('\n\n').map((paragraph, idx) => {
-            if (paragraph.startsWith('# ')) {
-              return <h1 key={idx} className="text-xl font-extrabold text-slate-100 border-b border-slate-800 pb-2">{paragraph.replace('# ', '')}</h1>;
-            }
-            if (paragraph.startsWith('## ')) {
-              return <h2 key={idx} className="text-base font-bold text-cyan-300 mt-4 mb-2">{paragraph.replace('## ', '')}</h2>;
-            }
-            if (paragraph.startsWith('### ')) {
-              return <h3 key={idx} className="text-sm font-semibold text-slate-200 mt-3 mb-1">{paragraph.replace('### ', '')}</h3>;
-            }
-            if (paragraph.includes('```')) {
-              const lines = paragraph.split('\n');
-              const code = lines.filter(l => !l.startsWith('```')).join('\n');
-              return (
-                <div key={idx} className="relative group my-3">
-                  <pre className="bg-[#090d16] p-3 rounded-lg border border-slate-800 font-mono text-xs text-cyan-200 overflow-x-auto">
-                    <code>{code}</code>
-                  </pre>
-                  <button
-                    onClick={() => copyToClipboard(code)}
-                    className="absolute top-2 right-2 p-1.5 rounded bg-slate-800/80 text-slate-400 hover:text-white opacity-0 group-hover:opacity-100 transition"
-                    title="Copy command"
-                  >
-                    {copiedCode === code ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-              );
-            }
-            return <p key={idx} className="text-slate-300">{paragraph}</p>;
-          })}
+          {(
+            lab.instructionsMarkdown
+              .split(/##\s*Guided Instructions/i)[0]
+              .split(/##\s*Reference Commands/i)[0]
+              .trim()
+          )
+            .split('\n\n')
+            .map((paragraph, idx) => {
+              if (paragraph.startsWith('# ')) {
+                return <h1 key={idx} className="text-xl font-extrabold text-slate-100 border-b border-slate-800 pb-2">{paragraph.replace('# ', '')}</h1>;
+              }
+              if (paragraph.startsWith('## ')) {
+                return <h2 key={idx} className="text-base font-bold text-cyan-300 mt-4 mb-2">{paragraph.replace('## ', '')}</h2>;
+              }
+              if (paragraph.startsWith('### ')) {
+                return <h3 key={idx} className="text-sm font-semibold text-slate-200 mt-3 mb-1">{paragraph.replace('### ', '')}</h3>;
+              }
+              if (paragraph.includes('```')) {
+                const lines = paragraph.split('\n');
+                const code = lines.filter(l => !l.startsWith('```')).join('\n');
+                return (
+                  <div key={idx} className="relative group my-3">
+                    <pre className="bg-[#090d16] p-3 rounded-lg border border-slate-800 font-mono text-xs text-cyan-200 overflow-x-auto">
+                      <code>{code}</code>
+                    </pre>
+                    <button
+                      onClick={() => copyToClipboard(code)}
+                      className="absolute top-2 right-2 p-1.5 rounded bg-slate-800/80 text-slate-400 hover:text-white opacity-0 group-hover:opacity-100 transition"
+                      title="Copy command"
+                    >
+                      {copiedCode === code ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                );
+              }
+              return <p key={idx} className="text-slate-300">{paragraph}</p>;
+            })}
         </div>
 
         {/* Tasks Section */}

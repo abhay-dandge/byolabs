@@ -2,25 +2,28 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
-import { LabSession, Lab } from '@byolabs/shared';
-import { Terminal, Play, Square, Clock, ArrowRight, RefreshCw, CheckCircle2, Shield } from 'lucide-react';
+import { LabSession, Lab, UserUsageReport } from '@byolabs/shared';
+import { Terminal, Play, Square, Clock, ArrowRight, RefreshCw, CheckCircle2, Shield, Hourglass, AlertTriangle } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
   const [activeSessions, setActiveSessions] = useState<LabSession[]>([]);
   const [recommendedLabs, setRecommendedLabs] = useState<Lab[]>([]);
+  const [usage, setUsage] = useState<UserUsageReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [stoppingId, setStoppingId] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [sessionsRes, labsRes] = await Promise.all([
+      const [sessionsRes, labsRes, usageRes] = await Promise.all([
         api.getMyActiveSessions(),
         api.getLabs(),
+        api.getMyUsage(),
       ]);
       setActiveSessions(sessionsRes.sessions);
       setRecommendedLabs(labsRes.labs.slice(0, 3));
+      setUsage(usageRes.usage);
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
     } finally {
@@ -46,29 +49,82 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
-      {/* User Welcome Banner */}
-      <div className="p-8 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-cyan-950/40 border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 shadow-2xl">
-        <div>
-          <div className="flex items-center space-x-3 mb-2">
-            <h1 className="text-3xl font-extrabold text-white">Welcome back, {user?.name}!</h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-950 border border-emerald-800 text-emerald-300 flex items-center">
-              <CheckCircle2 className="w-3 h-3 mr-1" /> {user?.status}
-            </span>
+      {/* User Welcome Banner & Usage Card */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 p-8 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-cyan-950/40 border border-slate-800 flex flex-col justify-between space-y-4 shadow-2xl">
+          <div>
+            <div className="flex items-center space-x-3 mb-2">
+              <h1 className="text-3xl font-extrabold text-white">Welcome back, {user?.name}!</h1>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-950 border border-emerald-800 text-emerald-300 flex items-center">
+                <CheckCircle2 className="w-3 h-3 mr-1" /> {user?.status}
+              </span>
+            </div>
+            <p className="text-slate-400 text-sm">
+              You have <strong className="text-cyan-400 font-mono">{activeSessions.length}</strong> active Kubernetes lab workspace currently running.
+            </p>
           </div>
-          <p className="text-slate-400 text-sm">
-            You have <strong className="text-cyan-400 font-mono">{activeSessions.length}</strong> active Kubernetes lab workspace currently running.
-          </p>
+
+          <div className="flex items-center space-x-3 pt-4">
+            <Link
+              to="/labs"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-cyan-500/20 flex items-center space-x-2 transition"
+            >
+              <Play className="w-4 h-4" />
+              <span>Browse All Labs</span>
+            </Link>
+          </div>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <Link
-            to="/labs"
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-cyan-500/20 flex items-center space-x-2 transition"
-          >
-            <Play className="w-4 h-4" />
-            <span>Browse All Labs</span>
-          </Link>
-        </div>
+        {/* Monthly Lab Usage Card */}
+        {usage && (
+          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col justify-between shadow-2xl space-y-4">
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-mono uppercase tracking-wider text-slate-400 flex items-center">
+                  <Hourglass className="w-4 h-4 text-cyan-400 mr-1.5" /> Monthly Lab Usage
+                </span>
+                <span className="text-[11px] font-mono text-cyan-300 bg-cyan-950 border border-cyan-800/60 px-2 py-0.5 rounded-full">
+                  {usage.isCustomQuota ? 'Custom Quota' : 'Default Quota'}
+                </span>
+              </div>
+
+              <div className="flex items-baseline space-x-2 mt-1">
+                <span className="text-3xl font-extrabold text-white font-mono">{usage.usedHours}</span>
+                <span className="text-sm font-mono text-slate-400">/ {usage.monthlyQuotaHours} hrs used</span>
+              </div>
+
+              {/* Usage Progress Bar */}
+              <div className="w-full bg-slate-950 h-3 rounded-full mt-3 overflow-hidden border border-slate-800 p-0.5">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    usage.percentUsed > 90
+                      ? 'bg-rose-500'
+                      : usage.percentUsed > 75
+                      ? 'bg-amber-500'
+                      : 'bg-gradient-to-r from-cyan-500 to-indigo-500'
+                  }`}
+                  style={{ width: `${Math.min(100, usage.percentUsed)}%` }}
+                ></div>
+              </div>
+
+              <div className="flex justify-between items-center text-[11px] font-mono text-slate-400 mt-2">
+                <span>{usage.percentUsed}% consumed</span>
+                <span>{usage.remainingHours} hrs remaining</span>
+              </div>
+            </div>
+
+            {usage.isExceeded ? (
+              <div className="p-2.5 rounded-xl bg-rose-950/80 border border-rose-800 text-rose-300 text-xs flex items-center space-x-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 text-rose-400" />
+                <span>Limit reached. Contact Admin to request additional hours.</span>
+              </div>
+            ) : (
+              <div className="text-[11px] text-slate-400">
+                Resets on the 1st of next month. Contact Admin to adjust quota.
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Active Running Labs Workspace Section */}

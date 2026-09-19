@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { User, Lab, LabSession, SystemLog, AuditLog, SystemSettings } from '@byolabs/shared';
+import { User, Lab, LabSession, SystemLog, AuditLog, SystemSettings, UserUsageReport } from '@byolabs/shared';
 
 interface DatabaseSchema {
   users: User[];
@@ -19,6 +19,7 @@ const defaultSettings: SystemSettings = {
   maxClusterLabs: 50,
   defaultLabTimeoutMinutes: 60,
   defaultIdleTimeoutMinutes: 30,
+  defaultMonthlyQuotaHours: 30,
   requireAdminApproval: true,
 };
 
@@ -29,13 +30,21 @@ class FileStore {
   constructor() {
     this.filePath = path.resolve(DB_PATH);
     this.data = this.load();
+    if (!this.data.settings.defaultMonthlyQuotaHours) {
+      this.data.settings.defaultMonthlyQuotaHours = 30;
+      this.save();
+    }
   }
 
   private load(): DatabaseSchema {
     try {
       if (fs.existsSync(this.filePath)) {
         const raw = fs.readFileSync(this.filePath, 'utf-8');
-        return JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        if (parsed.settings && parsed.settings.defaultMonthlyQuotaHours === undefined) {
+          parsed.settings.defaultMonthlyQuotaHours = 30;
+        }
+        return parsed;
       }
     } catch (err) {
       console.error('Error loading DB file, initializing fresh DB:', err);
@@ -157,6 +166,76 @@ class FileStore {
       this.data.sessions[idx] = session;
       this.save();
     }
+  }
+
+  // Usage & Quota Tracking
+  public getUserMonthlyUsage(userId: string, yearMonth?: string): UserUsageReport {
+    const user = this.getUserById(userId);
+    const settings = this.getSettings();
+    const defaultQuota = settings.defaultMonthlyQuotaHours || 30;
+    const quotaHours = user?.monthlyQuotaHours !== undefined ? user.monthlyQuotaHours : defaultQuota;
+    const isCustomQuota = user?.monthlyQuotaHours !== undefined;
+
+    const targetYM = yearMonth || new Date().toISOString().substring(0, 7); // e.g. "2026-09"
+
+    const userSessions = this.data.sessions.filter((s) => {
+      if (s.userId !== userId) return false;
+      const createdYM = (s.createdAt || '').substring(0, 7);
+      const startedYM = (s.startedAt || '').substring(0, 7);
+      return createdYM === targetYM || startedYM === targetYM;
+    });
+
+    let totalDurationMs = 0;
+    const nowMs = Date.now();
+
+    for (const session of userSessions) {
+      const startTime = new Date(session.startedAt || session.createdAt).getTime();
+      let endTime = nowMs;
+
+      if (['STOPPED', 'EXPIRED', 'FAILED'].includes(session.status)) {
+        if (session.endedAt) {
+          endTime = new Date(session.endedAt).getTime();
+        } else if (session.lastActivityAt) {
+          endTime = new Date(session.lastActivityAt).getTime();
+        } else if (session.expiresAt) {
+          endTime = new Date(session.expiresAt).getTime();
+        } else {
+          endTime = startTime;
+        }
+      }
+
+      const duration = Math.max(0, endTime - startTime);
+      totalDurationMs += duration;
+    }
+
+    const usedMinutes = Math.round(totalDurationMs / (60 * 1000));
+    const usedHours = Number((usedMinutes / 60).toFixed(1));
+    const quotaMinutes = quotaHours * 60;
+    const remainingMinutes = Math.max(0, quotaMinutes - usedMinutes);
+    const remainingHours = Number((remainingMinutes / 60).toFixed(1));
+    const percentUsed = quotaMinutes > 0 ? Math.min(100, Number(((usedMinutes / quotaMinutes) * 100).toFixed(1))) : 100;
+    const isExceeded = usedMinutes >= quotaMinutes;
+    const activeSessionsCount = this.getActiveSessionsByUserId(userId).length;
+
+    return {
+      userId,
+      userName: user?.name || 'Unknown',
+      userEmail: user?.email || 'Unknown',
+      username: user?.username || 'Unknown',
+      monthlyQuotaHours: quotaHours,
+      isCustomQuota,
+      usedMinutes,
+      usedHours,
+      remainingMinutes,
+      remainingHours,
+      percentUsed,
+      isExceeded,
+      activeSessionsCount,
+    };
+  }
+
+  public getAllUsersUsageReport(yearMonth?: string): UserUsageReport[] {
+    return this.data.users.map((u) => this.getUserMonthlyUsage(u.id, yearMonth));
   }
 
   // Logs & Audit

@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api';
-import { User, Lab, LabSession, ClusterInfo, SystemLog, AuditLog, SystemSettings, UserUsageReport } from '@byolabs/shared';
-import { Shield, Users, Terminal, Cpu, HardDrive, CheckCircle2, XCircle, AlertTriangle, Plus, Trash2, Edit, RefreshCw, Activity, Clock, Hourglass, Sliders, CheckCheck, Server, Layers } from 'lucide-react';
+import { User, Lab, LabSession, ClusterInfo, SystemLog, AuditLog, SystemSettings, UserUsageReport, PasswordResetItem } from '@byolabs/shared';
+import { Shield, Users, Terminal, Cpu, HardDrive, CheckCircle2, XCircle, AlertTriangle, Plus, Trash2, Edit, RefreshCw, Activity, Clock, Hourglass, Sliders, CheckCheck, Server, Layers, KeyRound } from 'lucide-react';
 
 export const AdminDashboardPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'approvals' | 'users' | 'labs' | 'running' | 'cluster' | 'logs' | 'settings'>('approvals');
+  const [activeTab, setActiveTab] = useState<'approvals' | 'password-resets' | 'users' | 'labs' | 'running' | 'cluster' | 'logs' | 'settings'>('approvals');
 
   const [users, setUsers] = useState<User[]>([]);
   const [usageReports, setUsageReports] = useState<UserUsageReport[]>([]);
@@ -14,6 +14,7 @@ export const AdminDashboardPage: React.FC = () => {
   const [isK8sAvailable, setIsK8sAvailable] = useState<boolean>(false);
   const [logs, setLogs] = useState<SystemLog[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [passwordResets, setPasswordResets] = useState<PasswordResetItem[]>([]);
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -37,7 +38,7 @@ export const AdminDashboardPage: React.FC = () => {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [uRes, usageRes, lRes, rRes, cRes, logRes, audRes, setRes] = await Promise.all([
+      const [uRes, usageRes, lRes, rRes, cRes, logRes, audRes, setRes, prRes] = await Promise.all([
         api.getUsers(),
         api.getUsersUsage(),
         api.getAdminLabs(),
@@ -46,6 +47,7 @@ export const AdminDashboardPage: React.FC = () => {
         api.getLogs(),
         api.getAuditLogs(),
         api.getSettings(),
+        api.getPasswordResets(),
       ]);
 
       setUsers(uRes.users);
@@ -56,6 +58,7 @@ export const AdminDashboardPage: React.FC = () => {
       setIsK8sAvailable(cRes.isK8sAvailable);
       setLogs(logRes.logs);
       setAuditLogs(audRes.auditLogs);
+      setPasswordResets(prRes.passwordResets || []);
       setSettings(setRes.settings);
       if (setRes.settings?.defaultMonthlyQuotaHours) {
         setGlobalQuotaValue(setRes.settings.defaultMonthlyQuotaHours);
@@ -84,6 +87,38 @@ export const AdminDashboardPage: React.FC = () => {
         fetchAllData();
       } catch (err: any) {
         alert(err.message || 'Failed to approve all pending users');
+      }
+    }
+  };
+
+  const handleApprovePasswordReset = async (id: string) => {
+    try {
+      const res = await api.approvePasswordReset(id);
+      alert(res.message);
+      fetchAllData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to approve password reset');
+    }
+  };
+
+  const handleRejectPasswordReset = async (id: string) => {
+    try {
+      const res = await api.rejectPasswordReset(id);
+      alert(res.message);
+      fetchAllData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to reject password reset');
+    }
+  };
+
+  const handleApproveAllPasswordResets = async () => {
+    if (confirm('Approve all pending password reset requests? The new passwords will immediately become active with zero authentication required.')) {
+      try {
+        const res = await api.approveAllPasswordResets();
+        alert(res.message);
+        fetchAllData();
+      } catch (err: any) {
+        alert(err.message || 'Failed to approve all password resets');
       }
     }
   };
@@ -172,6 +207,8 @@ export const AdminDashboardPage: React.FC = () => {
 
   const pendingUsers = users.filter((u) => u.status === 'PENDING');
   const pendingUsersCount = pendingUsers.length;
+  const pendingResets = passwordResets.filter((r) => r.status === 'PENDING');
+  const pendingResetsCount = pendingResets.length;
   const totalMonthlyHoursUsed = usageReports.reduce((acc, u) => acc + u.usedHours, 0).toFixed(1);
 
   return (
@@ -235,6 +272,19 @@ export const AdminDashboardPage: React.FC = () => {
           {pendingUsersCount > 0 && (
             <span className="px-2 py-0.5 rounded-full text-xs bg-amber-950 text-amber-300 border border-amber-800 font-bold animate-pulse">
               {pendingUsersCount}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('password-resets')}
+          className={`pb-3 transition relative flex items-center space-x-1.5 ${activeTab === 'password-resets' ? 'text-amber-400 border-b-2 border-amber-400' : 'text-slate-400 hover:text-white'}`}
+        >
+          <KeyRound className="w-4 h-4" />
+          <span>Password Resets</span>
+          {pendingResetsCount > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-xs bg-amber-950 text-amber-300 border border-amber-800 font-bold animate-pulse">
+              {pendingResetsCount}
             </span>
           )}
         </button>
@@ -351,6 +401,113 @@ export const AdminDashboardPage: React.FC = () => {
                         >
                           Reject
                         </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB CONTENT: PASSWORD RESET REQUESTS TAB */}
+      {activeTab === 'password-resets' && (
+        <div className="space-y-6">
+          {/* Top Banner with Approve All Button */}
+          <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-amber-950/30 to-slate-900 border border-amber-800/40 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-xl">
+            <div>
+              <h2 className="text-xl font-bold text-white flex items-center">
+                <KeyRound className="w-6 h-6 text-amber-400 mr-2.5" /> Password Reset Requests
+              </h2>
+              <p className="text-xs text-slate-300 mt-1">
+                There are currently <strong className="text-amber-400 font-mono text-sm">{pendingResetsCount}</strong> pending password reset request(s). When approved, the user's password is automatically updated with zero additional authentication required.
+              </p>
+            </div>
+
+            {pendingResetsCount > 0 && (
+              <button
+                onClick={handleApproveAllPasswordResets}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs flex items-center space-x-2 shadow-lg shadow-emerald-950 transition transform hover:scale-105"
+              >
+                <CheckCheck className="w-4 h-4" />
+                <span>Approve All Resets ({pendingResetsCount})</span>
+              </button>
+            )}
+          </div>
+
+          {passwordResets.length === 0 ? (
+            <div className="p-12 rounded-2xl bg-slate-900/60 border border-slate-800 text-center space-y-3">
+              <div className="w-12 h-12 rounded-full bg-emerald-950 border border-emerald-800 text-emerald-400 flex items-center justify-center mx-auto">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold text-white">No Password Reset Requests</h3>
+              <p className="text-xs text-slate-400 max-w-md mx-auto">
+                There are no password reset requests queued. When a user requests a password reset, it will appear here for one-click admin approval.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+              <table className="w-full text-left text-sm text-slate-300">
+                <thead className="bg-slate-950 text-xs uppercase font-mono text-slate-400 border-b border-slate-800">
+                  <tr>
+                    <th className="p-4">User Details</th>
+                    <th className="p-4">Request Date & Time</th>
+                    <th className="p-4">Status</th>
+                    <th className="p-4 text-right">Approval Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  {passwordResets.map((r) => (
+                    <tr key={r.id} className="hover:bg-slate-800/50">
+                      <td className="p-4">
+                        <div className="font-bold text-white text-base">{r.userName}</div>
+                        <div className="text-xs text-slate-400">{r.userEmail}</div>
+                        <div className="text-[10px] text-slate-500 font-mono mt-0.5">ID: {r.id}</div>
+                      </td>
+                      <td className="p-4 text-xs text-slate-400 font-mono">
+                        {new Date(r.createdAt).toLocaleDateString()} {new Date(r.createdAt).toLocaleTimeString()}
+                      </td>
+                      <td className="p-4">
+                        {r.status === 'PENDING' && (
+                          <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-amber-950 text-amber-300 border border-amber-800 animate-pulse">
+                            PENDING APPROVAL
+                          </span>
+                        )}
+                        {r.status === 'APPROVED' && (
+                          <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
+                            APPROVED
+                          </span>
+                        )}
+                        {r.status === 'REJECTED' && (
+                          <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-rose-950 text-rose-300 border border-rose-800">
+                            REJECTED
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-4 text-right space-x-2">
+                        {r.status === 'PENDING' ? (
+                          <>
+                            <button
+                              onClick={() => handleApprovePasswordReset(r.id)}
+                              className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-950 inline-flex items-center space-x-1.5"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Approve Reset</span>
+                            </button>
+                            <button
+                              onClick={() => handleRejectPasswordReset(r.id)}
+                              className="px-3 py-1.5 rounded-xl bg-rose-950 hover:bg-rose-900 border border-rose-800 text-rose-300 text-xs inline-flex items-center space-x-1.5"
+                            >
+                              <XCircle className="w-3.5 h-3.5" />
+                              <span>Reject</span>
+                            </button>
+                          </>
+                        ) : (
+                          <span className="text-xs text-slate-500 font-mono">
+                            {r.reviewedAt ? `Reviewed on ${new Date(r.reviewedAt).toLocaleDateString()}` : 'Resolved'}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}

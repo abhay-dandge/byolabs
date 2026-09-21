@@ -1,4 +1,4 @@
-import { User, Lab, LabSession, ClusterStatus, ClusterInfo, SystemLog, AuditLog, SystemSettings, UserUsageReport } from '@byolabs/shared';
+import { User, Lab, LabSession, ClusterStatus, ClusterInfo, SystemLog, AuditLog, SystemSettings, UserUsageReport, PasswordResetItem } from '@byolabs/shared';
 
 const API_BASE = '/api/v1';
 
@@ -43,6 +43,16 @@ export const api = {
   register: (data: any) => request<{ message: string; user: User }>('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
   login: (data: any) => request<{ user: User; token: string }>('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
   me: () => request<{ user: User }>('/auth/me'),
+  forgotPassword: (data: { emailOrUsername: string; newPassword?: string }) =>
+    request<{ message: string; resetToken?: string; resetUrl?: string; requestId?: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  resetPassword: (data: { token: string; newPassword: string }) =>
+    request<{ message: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 
   // Labs
   getLabs: () => request<{ labs: Lab[] }>('/labs'),
@@ -66,6 +76,12 @@ export const api = {
   suspendUser: (id: string) => request<{ message: string; user: User }>(`/admin/users/${id}/suspend`, { method: 'POST' }),
   reactivateUser: (id: string) => request<{ message: string; user: User }>(`/admin/users/${id}/reactivate`, { method: 'POST' }),
   deleteUser: (id: string) => request<{ message: string }>(`/admin/users/${id}`, { method: 'DELETE' }),
+
+  // Admin Password Reset Requests
+  getPasswordResets: () => request<{ passwordResets: PasswordResetItem[] }>('/admin/password-resets'),
+  approvePasswordReset: (id: string) => request<{ message: string; request: PasswordResetItem }>(`/admin/password-resets/${id}/approve`, { method: 'POST' }),
+  rejectPasswordReset: (id: string) => request<{ message: string; request: PasswordResetItem }>(`/admin/password-resets/${id}/reject`, { method: 'POST' }),
+  approveAllPasswordResets: () => request<{ message: string; approvedCount: number }>('/admin/password-resets/approve-all', { method: 'POST' }),
 
   getAdminLabs: () => request<{ labs: Lab[] }>('/admin/labs'),
   createLab: (data: Partial<Lab>) => request<{ message: string; lab: Lab }>('/admin/labs', { method: 'POST', body: JSON.stringify(data) }),

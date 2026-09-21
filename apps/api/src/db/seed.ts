@@ -163,7 +163,7 @@ chmod +x sample.sh
       durationMinutes: 60,
       dockerImage: 'docker:dind',
       cpuRequest: '500m',
-      cpuLimit: '2',
+      cpuLimit: '1',
       memoryRequest: '1Gi',
       memoryLimit: '2Gi',
       storage: '2Gi',

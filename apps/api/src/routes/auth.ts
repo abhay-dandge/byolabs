@@ -126,4 +126,101 @@ router.get('/me', (req: Request, res: Response) => {
   }
 });
 
+// POST /api/v1/auth/forgot-password
+router.post('/forgot-password', async (req: Request, res: Response) => {
+  try {
+    const { emailOrUsername, newPassword } = req.body;
+
+    if (!emailOrUsername) {
+      return res.status(400).json({ error: 'Email or Username is required' });
+    }
+
+    const user = db.getUserByEmail(emailOrUsername) || db.getUserByUsername(emailOrUsername);
+
+    if (!user) {
+      // Return success message to avoid user enumeration
+      return res.json({
+        message: 'If an account exists with that email or username, your password reset request has been queued for administrator approval.',
+      });
+    }
+
+    if (newPassword) {
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      const passwordHash = await bcrypt.hash(newPassword, salt);
+
+      const resetReq = db.createPasswordReset(user.id, user.name, user.email, passwordHash);
+      db.addAuditLog(
+        user.id,
+        user.email,
+        'Password Reset Requested',
+        `Password reset request queued for Admin approval (Request ID: ${resetReq.id})`
+      );
+
+      return res.json({
+        message: 'Password reset request submitted successfully! Once an Administrator approves it in the Admin Dashboard, your new password will be active and you can log in immediately.',
+        requestId: resetReq.id,
+      });
+    }
+
+    const resetToken = db.createPasswordResetToken(user.id);
+    db.addAuditLog(user.id, user.email, 'Password Reset Requested', 'Generated password reset token (1 hour expiry)');
+
+    const resetUrl = `/reset-password?token=${resetToken}`;
+
+    return res.json({
+      message: 'Password reset instructions have been generated successfully.',
+      resetToken,
+      resetUrl,
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
+// POST /api/v1/auth/reset-password
+router.post('/reset-password', async (req: Request, res: Response) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ error: 'Token and new password are required' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    }
+
+    const tokenData = db.verifyPasswordResetToken(token);
+    if (!tokenData) {
+      return res.status(400).json({
+        error: 'Password reset link is invalid or has expired. Please request a new one.',
+      });
+    }
+
+    const user = db.getUserById(tokenData.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User associated with this token was not found' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    db.updatePassword(user.id, passwordHash);
+    db.consumePasswordResetToken(token);
+
+    db.addAuditLog(user.id, user.email, 'Password Reset Completed', 'User successfully reset their password');
+
+    return res.json({
+      message: 'Password has been reset successfully. You can now log in with your new password.',
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
 export default router;
+

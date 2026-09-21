@@ -22,7 +22,7 @@ metadata:
   namespace: lab-session-7f8d29c4
 spec:
   hard:
-    pods: "2"
+    pods: "1"
     requests.cpu: "250m"
     requests.memory: "256Mi"
     limits.cpu: "1"

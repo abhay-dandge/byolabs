@@ -72,7 +72,7 @@ router.post('/:id/start', authenticate, async (req: AuthenticatedRequest, res: R
     const userActive = db.getActiveSessionsByUserId(user.id);
     if (userActive.length >= settings.maxActiveLabsPerUser) {
       return res.status(400).json({
-        error: `Maximum active lab limit reached (${settings.maxActiveLabsPerUser} active labs max per user). Please stop an existing lab session first.`,
+        error: `Maximum active lab limit reached (${settings.maxActiveLabsPerUser} active lab max per user). Please stop an existing lab session first.`,
       });
     }
 

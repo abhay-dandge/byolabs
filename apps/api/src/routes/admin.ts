@@ -350,4 +350,87 @@ router.put('/settings', (req: AuthenticatedRequest, res: Response) => {
   return res.json({ message: 'Settings updated', settings: db.getSettings() });
 });
 
+// ================= PASSWORD RESET REQUESTS (ADMIN REVIEW) ================= //
+router.get('/password-resets', (req, res) => {
+  const requests = db.getPasswordResets().map((r) => ({
+    id: r.id,
+    userId: r.userId,
+    userName: r.userName,
+    userEmail: r.userEmail,
+    status: r.status,
+    createdAt: r.createdAt,
+    reviewedAt: r.reviewedAt,
+  }));
+  return res.json({ passwordResets: requests });
+});
+
+router.post('/password-resets/:id/approve', (req: AuthenticatedRequest, res: Response) => {
+  const approved = db.approvePasswordReset(req.params.id);
+  if (!approved) {
+    return res.status(404).json({ error: 'Password reset request not found or not pending' });
+  }
+
+  db.addAuditLog(
+    req.user!.id,
+    req.user!.email,
+    'Approve Password Reset',
+    `Approved password reset request for ${approved.userEmail} (${approved.userName})`
+  );
+
+  return res.json({
+    message: `Password reset request for ${approved.userEmail} approved successfully. User can now sign in with their new password.`,
+    request: {
+      id: approved.id,
+      userId: approved.userId,
+      userName: approved.userName,
+      userEmail: approved.userEmail,
+      status: approved.status,
+      createdAt: approved.createdAt,
+      reviewedAt: approved.reviewedAt,
+    },
+  });
+});
+
+router.post('/password-resets/:id/reject', (req: AuthenticatedRequest, res: Response) => {
+  const rejected = db.rejectPasswordReset(req.params.id);
+  if (!rejected) {
+    return res.status(404).json({ error: 'Password reset request not found or not pending' });
+  }
+
+  db.addAuditLog(
+    req.user!.id,
+    req.user!.email,
+    'Reject Password Reset',
+    `Rejected password reset request for ${rejected.userEmail}`
+  );
+
+  return res.json({
+    message: `Password reset request for ${rejected.userEmail} rejected.`,
+    request: {
+      id: rejected.id,
+      userId: rejected.userId,
+      userName: rejected.userName,
+      userEmail: rejected.userEmail,
+      status: rejected.status,
+      createdAt: rejected.createdAt,
+      reviewedAt: rejected.reviewedAt,
+    },
+  });
+});
+
+router.post('/password-resets/approve-all', (req: AuthenticatedRequest, res: Response) => {
+  const count = db.approveAllPasswordResets();
+  db.addAuditLog(
+    req.user!.id,
+    req.user!.email,
+    'Approve All Password Resets',
+    `Approved all ${count} pending password reset request(s)`
+  );
+  return res.json({
+    message: `Successfully approved all ${count} pending password reset requests. Users can now sign in with their new passwords.`,
+    approvedCount: count,
+  });
+});
+
 export default router;
+

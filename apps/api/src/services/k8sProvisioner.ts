@@ -193,11 +193,11 @@ export class LabProvisionerService {
       metadata: { name: 'lab-quota', namespace },
       spec: {
         hard: {
-          pods: '6',
-          'requests.cpu': isSidecarDind ? '1' : (lab.cpuRequest || '250m'),
-          'requests.memory': isSidecarDind ? '2Gi' : (lab.memoryRequest || '256Mi'),
-          'limits.cpu': isSidecarDind ? '4' : (lab.cpuLimit || '1'),
-          'limits.memory': isSidecarDind ? '4Gi' : (lab.memoryLimit || '1Gi'),
+          pods: '1',
+          'requests.cpu': isSidecarDind ? '500m' : (lab.cpuRequest || '250m'),
+          'requests.memory': isSidecarDind ? '1Gi' : (lab.memoryRequest || '256Mi'),
+          'limits.cpu': isSidecarDind ? '1' : (lab.cpuLimit || '1'),
+          'limits.memory': isSidecarDind ? '2Gi' : (lab.memoryLimit || '1Gi'),
         },
       },
     };
@@ -261,7 +261,7 @@ export class LabProvisionerService {
               tty: true,
               resources: {
                 requests: { cpu: '500m', memory: '1Gi' },
-                limits: { cpu: '2', memory: '2Gi' },
+                limits: { cpu: '1', memory: '2Gi' },
               },
             },
           ],

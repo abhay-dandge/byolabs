@@ -107,7 +107,7 @@
       "durationMinutes": 60,
       "dockerImage": "docker:dind",
       "cpuRequest": "500m",
-      "cpuLimit": "2",
+      "cpuLimit": "1",
       "memoryRequest": "1Gi",
       "memoryLimit": "2Gi",
       "storage": "2Gi",
@@ -565,11 +565,13 @@
     }
   ],
   "settings": {
-    "maxActiveLabsPerUser": 2,
+    "maxActiveLabsPerUser": 1,
     "maxClusterLabs": 50,
     "defaultLabTimeoutMinutes": 60,
     "defaultIdleTimeoutMinutes": 30,
     "requireAdminApproval": true,
     "defaultMonthlyQuotaHours": 30
-  }
+  },
+  "resetTokens": {},
+  "passwordResets": []
 }

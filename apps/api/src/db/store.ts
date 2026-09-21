@@ -1,10 +1,24 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { User, Lab, LabSession, SystemLog, AuditLog, SystemSettings, UserUsageReport } from '@byolabs/shared';
+
+export interface PasswordResetRecord {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  newPasswordHash: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  createdAt: string;
+  reviewedAt?: string;
+}
 
 interface DatabaseSchema {
   users: User[];
   passwords: Record<string, string>; // userId -> passwordHash
+  resetTokens?: Record<string, { userId: string; expiresAt: number }>; // token -> { userId, expiresAt }
+  passwordResets?: PasswordResetRecord[];
   labs: Lab[];
   sessions: LabSession[];
   logs: SystemLog[];
@@ -15,7 +29,7 @@ interface DatabaseSchema {
 const DB_PATH = process.env.DATABASE_PATH || './byolabs_db.json';
 
 const defaultSettings: SystemSettings = {
-  maxActiveLabsPerUser: 2,
+  maxActiveLabsPerUser: 1,
   maxClusterLabs: 50,
   defaultLabTimeoutMinutes: 60,
   defaultIdleTimeoutMinutes: 30,
@@ -44,6 +58,12 @@ class FileStore {
         if (parsed.settings && parsed.settings.defaultMonthlyQuotaHours === undefined) {
           parsed.settings.defaultMonthlyQuotaHours = 30;
         }
+        if (!parsed.resetTokens) {
+          parsed.resetTokens = {};
+        }
+        if (!parsed.passwordResets) {
+          parsed.passwordResets = [];
+        }
         return parsed;
       }
     } catch (err) {
@@ -52,6 +72,8 @@ class FileStore {
     return {
       users: [],
       passwords: {},
+      resetTokens: {},
+      passwordResets: [],
       labs: [],
       sessions: [],
       logs: [],
@@ -112,6 +134,127 @@ class FileStore {
   public getPasswordHash(userId: string): string | undefined {
     return this.data.passwords[userId];
   }
+
+  public updatePassword(userId: string, passwordHash: string): boolean {
+    if (this.data.passwords[userId] !== undefined) {
+      this.data.passwords[userId] = passwordHash;
+      this.save();
+      return true;
+    }
+    return false;
+  }
+
+  public createPasswordResetToken(userId: string, expiresInMs: number = 3600000): string {
+    if (!this.data.resetTokens) {
+      this.data.resetTokens = {};
+    }
+    const token = crypto.randomBytes(32).toString('hex');
+    this.data.resetTokens[token] = {
+      userId,
+      expiresAt: Date.now() + expiresInMs,
+    };
+    this.save();
+    return token;
+  }
+
+  public verifyPasswordResetToken(token: string): { userId: string } | null {
+    if (!this.data.resetTokens || !this.data.resetTokens[token]) {
+      return null;
+    }
+    const record = this.data.resetTokens[token];
+    if (Date.now() > record.expiresAt) {
+      delete this.data.resetTokens[token];
+      this.save();
+      return null;
+    }
+    return { userId: record.userId };
+  }
+
+  public consumePasswordResetToken(token: string): boolean {
+    if (this.data.resetTokens && this.data.resetTokens[token]) {
+      delete this.data.resetTokens[token];
+      this.save();
+      return true;
+    }
+    return false;
+  }
+
+  // Password Reset Requests (Admin Review & Approval)
+  public getPasswordResets(): PasswordResetRecord[] {
+    return this.data.passwordResets || [];
+  }
+
+  public createPasswordReset(
+    userId: string,
+    userName: string,
+    userEmail: string,
+    newPasswordHash: string
+  ): PasswordResetRecord {
+    if (!this.data.passwordResets) {
+      this.data.passwordResets = [];
+    }
+    // Cancel or supersede any existing pending requests for this user
+    this.data.passwordResets.forEach((pr) => {
+      if (pr.userId === userId && pr.status === 'PENDING') {
+        pr.status = 'REJECTED';
+        pr.reviewedAt = new Date().toISOString();
+      }
+    });
+
+    const record: PasswordResetRecord = {
+      id: `reset-${crypto.randomBytes(6).toString('hex')}`,
+      userId,
+      userName,
+      userEmail,
+      newPasswordHash,
+      status: 'PENDING',
+      createdAt: new Date().toISOString(),
+    };
+
+    this.data.passwordResets.unshift(record);
+    this.save();
+    return record;
+  }
+
+  public approvePasswordReset(id: string): PasswordResetRecord | null {
+    if (!this.data.passwordResets) return null;
+    const req = this.data.passwordResets.find((r) => r.id === id);
+    if (!req || req.status !== 'PENDING') return null;
+
+    // Directly activate the new password hash for the user!
+    this.data.passwords[req.userId] = req.newPasswordHash;
+    req.status = 'APPROVED';
+    req.reviewedAt = new Date().toISOString();
+    this.save();
+    return req;
+  }
+
+  public rejectPasswordReset(id: string): PasswordResetRecord | null {
+    if (!this.data.passwordResets) return null;
+    const req = this.data.passwordResets.find((r) => r.id === id);
+    if (!req || req.status !== 'PENDING') return null;
+
+    req.status = 'REJECTED';
+    req.reviewedAt = new Date().toISOString();
+    this.save();
+    return req;
+  }
+
+  public approveAllPasswordResets(): number {
+    if (!this.data.passwordResets) return 0;
+    const pending = this.data.passwordResets.filter((r) => r.status === 'PENDING');
+    const now = new Date().toISOString();
+    for (const req of pending) {
+      this.data.passwords[req.userId] = req.newPasswordHash;
+      req.status = 'APPROVED';
+      req.reviewedAt = now;
+    }
+    if (pending.length > 0) {
+      this.save();
+    }
+    return pending.length;
+  }
+
 
   // Lab Operations
   public getLabs(): Lab[] {

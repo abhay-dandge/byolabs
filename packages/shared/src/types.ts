@@ -175,3 +175,37 @@ export interface AuthResponse {
   user: User;
   token: string;
 }
+
+export interface ForgotPasswordRequest {
+  emailOrUsername: string;
+  newPassword?: string;
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
+  resetToken?: string;
+  resetUrl?: string;
+  requestId?: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  newPassword: string;
+}
+
+export interface ResetPasswordResponse {
+  message: string;
+}
+
+export type PasswordResetStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface PasswordResetItem {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  status: PasswordResetStatus;
+  createdAt: string;
+  reviewedAt?: string;
+}
+

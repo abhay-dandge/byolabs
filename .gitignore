@@ -21,6 +21,8 @@ yarn-error.log*
 *.db
 *.sqlite
 byolabs_db.json
+*.zip
+public/*.zip
 
 # System & IDE files
 .DS_Store

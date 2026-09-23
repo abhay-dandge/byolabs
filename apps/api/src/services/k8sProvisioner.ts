@@ -194,10 +194,10 @@ export class LabProvisionerService {
       spec: {
         hard: {
           pods: '1',
-          'requests.cpu': isSidecarDind ? '500m' : (lab.cpuRequest || '250m'),
-          'requests.memory': isSidecarDind ? '1Gi' : (lab.memoryRequest || '256Mi'),
-          'limits.cpu': isSidecarDind ? '1' : (lab.cpuLimit || '1'),
-          'limits.memory': isSidecarDind ? '2Gi' : (lab.memoryLimit || '1Gi'),
+          'requests.cpu': isSidecarDind ? (lab.cpuRequest || '100m') : (lab.cpuRequest || '250m'),
+          'requests.memory': isSidecarDind ? (lab.memoryRequest || '512Mi') : (lab.memoryRequest || '256Mi'),
+          'limits.cpu': isSidecarDind ? (lab.cpuLimit || '1') : (lab.cpuLimit || '1'),
+          'limits.memory': isSidecarDind ? (lab.memoryLimit || '2Gi') : (lab.memoryLimit || '1Gi'),
         },
       },
     };
@@ -260,8 +260,8 @@ export class LabProvisionerService {
               stdin: true,
               tty: true,
               resources: {
-                requests: { cpu: '500m', memory: '1Gi' },
-                limits: { cpu: '1', memory: '2Gi' },
+                requests: { cpu: lab.cpuRequest || '100m', memory: lab.memoryRequest || '512Mi' },
+                limits: { cpu: lab.cpuLimit || '1', memory: lab.memoryLimit || '2Gi' },
               },
             },
           ],

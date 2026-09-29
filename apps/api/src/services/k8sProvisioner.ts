@@ -82,18 +82,20 @@ export class LabProvisionerService {
 
   public getKubeConfigForSession(session: LabSession): k8s.KubeConfig | null {
     const isDockerLab = session.labSlug?.includes('docker') || session.labId?.includes('docker');
+    const isPodmanLab = session.labSlug?.includes('podman') || session.labId?.includes('podman');
+    const isStandardCluster = isDockerLab || isPodmanLab;
     const autopilotContext = process.env.AUTOPILOT_K8S_CONTEXT || 'gke_gdg-test-458407_asia-south1_autopilot-cluster-2-spot';
     const standardContext = process.env.STANDARD_K8S_CONTEXT || 'gke_gdg-test-458407_us-central1-a_byo-dind-cluster';
-    const targetContext = isDockerLab ? standardContext : autopilotContext;
+    const targetContext = isStandardCluster ? standardContext : autopilotContext;
 
     try {
       const kc = new k8s.KubeConfig();
-      if (process.env.KUBERNETES_SERVICE_HOST && !isDockerLab && !process.env.AUTOPILOT_K8S_CONTEXT) {
+      if (process.env.KUBERNETES_SERVICE_HOST && !isStandardCluster && !process.env.AUTOPILOT_K8S_CONTEXT) {
         kc.loadFromCluster();
         return kc;
       }
 
-      if (isDockerLab && process.env.STANDARD_K8S_HOST && process.env.STANDARD_K8S_TOKEN) {
+      if (isStandardCluster && process.env.STANDARD_K8S_HOST && process.env.STANDARD_K8S_TOKEN) {
         const cluster = {
           name: 'byo-dind-cluster',
           server: process.env.STANDARD_K8S_HOST,
@@ -116,15 +118,19 @@ export class LabProvisionerService {
 
   public getClusterContextForSession(session: LabSession): string {
     const isDockerLab = session.labSlug?.includes('docker') || session.labId?.includes('docker');
-    return isDockerLab
+    const isPodmanLab = session.labSlug?.includes('podman') || session.labId?.includes('podman');
+    const isStandardCluster = isDockerLab || isPodmanLab;
+    return isStandardCluster
       ? (process.env.STANDARD_K8S_CONTEXT || 'gke_gdg-test-458407_us-central1-a_byo-dind-cluster')
       : (process.env.AUTOPILOT_K8S_CONTEXT || 'gke_gdg-test-458407_asia-south1_autopilot-cluster-2-spot');
   }
 
   private getClusterApiForLab(lab: Lab): { api: k8s.CoreV1Api; clusterName: string; isStandardCluster: boolean } {
     const isDockerLab = lab.category === 'Docker' || lab.slug?.includes('docker') || lab.dockerImage?.includes('dind') || lab.dockerImage === 'docker:27-cli';
+    const isPodmanLab = lab.category === 'Podman' || lab.slug?.includes('podman') || (lab.dockerImage && lab.dockerImage.includes('podman'));
+    const isStandardClusterLab = isDockerLab || isPodmanLab;
 
-    if (isDockerLab && this.standardApi) {
+    if (isStandardClusterLab && this.standardApi) {
       return { api: this.standardApi, clusterName: 'Standard GKE (byo-dind-cluster)', isStandardCluster: true };
     }
     if (this.autopilotApi) {
@@ -187,6 +193,7 @@ export class LabProvisionerService {
     }
 
     const isSidecarDind = lab.category === 'Docker' || lab.slug === 'docker-playground' || lab.dockerImage === 'docker:27-cli';
+    const isPodmanLab = lab.category === 'Podman' || lab.slug?.includes('podman') || (lab.dockerImage && lab.dockerImage.includes('podman'));
 
     // 2. Create ResourceQuota in namespace
     const quotaSpec: k8s.V1ResourceQuota = {
@@ -194,10 +201,10 @@ export class LabProvisionerService {
       spec: {
         hard: {
           pods: '1',
-          'requests.cpu': isSidecarDind ? (lab.cpuRequest || '100m') : (lab.cpuRequest || '250m'),
-          'requests.memory': isSidecarDind ? (lab.memoryRequest || '512Mi') : (lab.memoryRequest || '256Mi'),
-          'limits.cpu': isSidecarDind ? (lab.cpuLimit || '1') : (lab.cpuLimit || '1'),
-          'limits.memory': isSidecarDind ? (lab.memoryLimit || '2Gi') : (lab.memoryLimit || '1Gi'),
+          'requests.cpu': (isSidecarDind || isPodmanLab) ? (lab.cpuRequest || '100m') : (lab.cpuRequest || '250m'),
+          'requests.memory': (isSidecarDind || isPodmanLab) ? (lab.memoryRequest || '512Mi') : (lab.memoryRequest || '256Mi'),
+          'limits.cpu': (isSidecarDind || isPodmanLab) ? (lab.cpuLimit || '1') : (lab.cpuLimit || '1'),
+          'limits.memory': (isSidecarDind || isPodmanLab) ? (lab.memoryLimit || '2Gi') : (lab.memoryLimit || '1Gi'),
         },
       },
     };
@@ -268,6 +275,52 @@ export class LabProvisionerService {
           volumes: [
             {
               name: 'docker-storage',
+              emptyDir: {},
+            },
+          ],
+          restartPolicy: 'Never',
+        },
+      };
+    } else if (isPodmanLab) {
+      podSpec = {
+        metadata: {
+          name: podName,
+          namespace,
+          labels: {
+            app: 'podman-lab',
+            'session-id': session.id,
+            'user-id': session.userId,
+            'lab-type': lab.slug,
+          },
+        },
+        spec: {
+          containers: [
+            {
+              name: 'lab-container',
+              image: lab.dockerImage || 'quay.io/podman/stable',
+              command: ['/bin/sh', '-c', 'trap : TERM INT; sleep infinity & wait'],
+              securityContext: {
+                privileged: true,
+                allowPrivilegeEscalation: true,
+                readOnlyRootFilesystem: false,
+              },
+              volumeMounts: [
+                {
+                  name: 'podman-storage',
+                  mountPath: '/var/lib/containers',
+                },
+              ],
+              stdin: true,
+              tty: true,
+              resources: {
+                requests: { cpu: lab.cpuRequest || '100m', memory: lab.memoryRequest || '512Mi' },
+                limits: { cpu: lab.cpuLimit || '1', memory: lab.memoryLimit || '2Gi' },
+              },
+            },
+          ],
+          volumes: [
+            {
+              name: 'podman-storage',
               emptyDir: {},
             },
           ],

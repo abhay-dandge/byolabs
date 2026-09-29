@@ -52,17 +52,20 @@
 3. Gateway invokes `@kubernetes/client-node` `Exec` stream API on target pod container stdin/stdout/stderr with TTY resize parameters.
 4. If running in local standalone development mode without an active K8s cluster, Gateway falls back gracefully to a secure isolated child process sandbox engine (pty/spawn) so full terminal functionality works end-to-end anywhere.
 
-### 2.3 Provisioning Workflow
+### 2.3 Provisioning & Multi-Cluster Dispatch Workflow
 1. User clicks **START LAB**.
-2. API verifies user status is `APPROVED` and checks user active lab quota (max 2 active labs per user).
+2. API verifies user status is `APPROVED` and checks user active lab quota (max active labs per user).
 3. API checks overall cluster resource capacity (Max cluster pods / memory budget).
-4. `LabProvisioner` generates unique `session_id` (e.g., `lab-7f8d29c4`).
-5. `LabProvisioner` creates target K8s Namespace (`lab-session-<id>`).
-6. `LabProvisioner` applies ResourceQuota and LimitRange to namespace.
-7. `LabProvisioner` creates Pod with specified image (e.g. `ubuntu:24.04`), CPU/memory requests/limits, TTY enabled, and initial startup command.
-8. API waits for Pod state `Ready` with timeout check (30s max).
-9. Database session record updated to `RUNNING` with `expires_at` timestamp.
-10. API returns session details to frontend; frontend transitions to `/lab/:sessionId` workspace.
+4. `LabProvisioner` identifies target cluster:
+   - **Standard GKE Cluster** (`byo-dind-cluster`): Dispatches container runtime workloads (**Docker DinD** and **Podman**) requiring rootful privileges, crun runtime, and emptyDir container storage mounts.
+   - **Autopilot GKE Cluster** (`autopilot-cluster-2-spot`): Dispatches standard unprivileged workloads (**Ubuntu Playground**, **Linux Fundamentals**, **RHCSA**, **Git**).
+5. `LabProvisioner` generates unique `session_id` (e.g., `lab-7f8d29c4`).
+6. `LabProvisioner` creates target K8s Namespace (`lab-session-<id>`).
+7. `LabProvisioner` applies ResourceQuota to namespace.
+8. `LabProvisioner` creates Pod with specified image (e.g. `quay.io/podman/stable`, `docker:dind`, or `ubuntu:latest`), CPU/memory requests/limits, TTY enabled, and initial startup command.
+9. API waits for Pod state `Ready` with timeout check.
+10. Database session record updated to `RUNNING` with `expires_at` timestamp.
+11. API returns session details to frontend; frontend transitions to `/lab/:sessionId` workspace.
 
 ### 2.4 Automatic Lifecycle & Cleanup Engine
 * Periodic background worker (runs every 30s) scans database for expired sessions (`expires_at < NOW()` or `last_activity_at + idle_timeout < NOW()`).

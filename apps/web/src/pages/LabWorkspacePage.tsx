@@ -20,13 +20,13 @@ export const LabWorkspacePage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const [showCertModal, setShowCertModal] = useState(false);
-  const isDockerLab = lab?.category === 'Docker' || lab?.slug?.includes('docker') || lab?.dockerImage?.includes('docker');
-  const initialCountdown = isDockerLab ? 120 : 30;
-  const [startupCountdown, setStartupCountdown] = useState<number>(120);
+  const isDockerLab = lab?.category === 'Docker' || lab?.category === 'Podman' || lab?.slug?.includes('docker') || lab?.slug?.includes('podman') || lab?.dockerImage?.includes('docker') || lab?.dockerImage?.includes('podman');
+  const initialCountdown = isDockerLab ? 90 : 30;
+  const [startupCountdown, setStartupCountdown] = useState<number>(90);
 
   useEffect(() => {
     if (lab) {
-      setStartupCountdown(isDockerLab ? 120 : 30);
+      setStartupCountdown(isDockerLab ? 90 : 30);
     }
   }, [lab?.id]);
 

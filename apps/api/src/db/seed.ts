@@ -238,6 +238,118 @@ docker images
       ],
     },
     {
+      id: 'lab-podman-playground',
+      slug: 'podman-playground',
+      name: 'Podman Playground',
+      description: 'Interactive Podman container sandbox running on the Standard GKE cluster with crun OCI runtime. Practice daemonless container lifecycle, image management, and Podman pods.',
+      category: 'Podman',
+      difficulty: 'Intermediate',
+      durationMinutes: 60,
+      dockerImage: 'quay.io/podman/stable',
+      cpuRequest: '250m',
+      cpuLimit: '1',
+      memoryRequest: '512Mi',
+      memoryLimit: '2Gi',
+      storage: '2Gi',
+      startupCommand: '/bin/bash',
+      terminalEnabled: true,
+      browserAccess: true,
+      isPublished: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      instructionsMarkdown: `
+# Podman Playground (Standard GKE Cluster)
+
+Welcome to your isolated **Podman Playground** running with full rootful container capabilities on the **Standard Kubernetes Cluster**!
+
+---
+
+## What is Podman?
+**Podman** (Pod Manager) is an open-source, daemonless, OCI-compliant container engine developed by Red Hat. Unlike Docker, Podman:
+- Operates **without a background daemon** (\`dockerd\`) — every container is a direct child of the Podman process (managed via Conmon).
+- Provides native support for **Pods** (groups of containers sharing network and namespaces, identical to Kubernetes Pods).
+- Can generate and play Kubernetes YAML manifests directly using \`podman kube generate\` and \`podman kube play\`.
+- CLI syntax is 1:1 compatible with Docker (\`alias docker=podman\`).
+
+---
+
+## Guided Exercises
+
+### Step 1: Inspect Podman Engine & Host Environment
+Verify your Podman version and check the underlying OCI runtime (\`crun\`), storage graph driver (\`overlay\`), and network backend (\`netavark\`):
+
+\`\`\`bash
+podman --version
+podman info
+\`\`\`
+
+### Step 2: Pull and Manage OCI Images
+Pull a lightweight Alpine Linux image from Docker Hub or Fedora registry:
+
+\`\`\`bash
+podman pull alpine
+podman images
+\`\`\`
+
+### Step 3: Run Interactive and Background Containers
+Run a container using Podman:
+
+\`\`\`bash
+# Run a one-off Alpine container
+podman run --rm alpine uname -a
+
+# Run a named container in background
+podman run --name my-alpine -d alpine sleep 3600
+podman ps -a
+\`\`\`
+
+### Step 4: Work with Podman Pods
+Podman's flagship feature is managing pods without requiring a Kubernetes cluster:
+
+\`\`\`bash
+# Create a new Pod named web-pod
+podman pod create --name web-pod -p 8080:80
+
+# List pods
+podman pod ps
+
+# Run a container inside the pod
+podman run -d --pod web-pod --name web-server nginx:alpine
+podman pod inspect web-pod
+\`\`\`
+
+---
+
+## Tasks Checklist
+      `,
+      tasks: [
+        {
+          id: 'task-podman-1',
+          title: '1. Verify Podman Engine & Version',
+          description: 'Run `podman --version` or `podman info` in the terminal to inspect the active Podman engine.',
+          validationScript: 'podman --version || podman info',
+        },
+        {
+          id: 'task-podman-2',
+          title: '2. Pull Alpine Container Image',
+          description: 'Pull the `alpine` image from registry using `podman pull alpine`.',
+          validationScript: 'podman images | grep -q "alpine" || podman image exists alpine',
+        },
+        {
+          id: 'task-podman-3',
+          title: '3. Run a Container with Podman',
+          description: 'Run a container named `my-alpine` or any container using `podman run`.',
+          validationScript: 'podman ps -a | grep -iE "alpine|my-alpine" || [ $(podman ps -a -q | wc -l) -gt 0 ]',
+        },
+        {
+          id: 'task-podman-4',
+          title: '4. Create a Podman Pod',
+          description: 'Create a Podman pod named `web-pod` using `podman pod create --name web-pod`.',
+          validationScript: 'podman pod exists web-pod || podman pod ps | grep -q "web-pod"',
+        },
+      ],
+    },
+    {
       id: 'lab-kubernetes-basics',
       slug: 'kubernetes-basics',
       name: 'Kubernetes Pods & Workload Basics',
@@ -545,4 +657,8 @@ Welcome to your Linux RHCSA & CLA Module 2 practical lab environment. Execute th
 
   db.seedInitialData(seedLabs, adminUser, adminPasswordHash);
   console.log('[Seeder] Seeding completed successfully!');
+}
+
+if (process.argv[1]?.endsWith('seed.js') || process.argv[1]?.endsWith('seed.ts')) {
+  seedDatabase().catch(console.error);
 }

@@ -16,6 +16,7 @@ export interface User {
 export type LabCategory = 
   | 'Linux'
   | 'Docker'
+  | 'Podman'
   | 'Kubernetes'
   | 'Git'
   | 'Ansible'

@@ -44,8 +44,8 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-09-19T05:21:02.220Z",
-      "updatedAt": "2026-09-19T05:21:02.220Z",
+      "createdAt": "2026-09-29T12:10:08.706Z",
+      "updatedAt": "2026-09-29T12:10:08.706Z",
       "instructionsMarkdown": "\n# Ubuntu 24.04 Playground\n\nWelcome to your isolated **Ubuntu 24.04** container environment running as a Kubernetes pod.\n\n## Prerequisites & Tools\nThis container comes pre-configured with:\n- `bash`\n- `curl`, `wget`, `git`\n- `iproute2` (`ip a`, `ip route`), `net-tools`\n- `procps` (`ps aux`, `top`)\n- `vim`, `nano`\n\n---\n\n## Guided Exercises\n\n### Step 1: Inspect System Release & Kernel\nRun the following command in the interactive terminal on the right to view your OS version:\n\n```bash\ncat /etc/os-release\nuname -a\n```\n\n### Step 2: Working Directory & Environment Variables\nCheck your current working directory and active shell environment:\n\n```bash\npwd\nwhoami\nenv | grep USER\n```\n\n### Step 3: Create a DevOps Workspace Directory\nCreate a directory named `devops` in your home directory:\n\n```bash\nmkdir -p ~/devops && cd ~/devops\npwd\n```\n\n---\n\n## Tasks Checklist\n      ",
       "tasks": [
         {
@@ -85,8 +85,8 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-09-19T05:21:02.220Z",
-      "updatedAt": "2026-09-19T05:21:02.220Z",
+      "createdAt": "2026-09-29T12:10:08.706Z",
+      "updatedAt": "2026-09-29T12:10:08.706Z",
       "instructionsMarkdown": "\n# Linux Fundamentals & File System Permissions\n\nLearn essential file ownership and permission control in Linux environments.\n\n## Quick Commands\n- `chmod 755 filename`\n- `chown user:group filename`\n- `ls -la`\n\n```bash\ntouch sample.sh\nchmod +x sample.sh\n./sample.sh\n```\n      ",
       "tasks": [
         {
@@ -106,17 +106,17 @@
       "difficulty": "Intermediate",
       "durationMinutes": 60,
       "dockerImage": "docker:dind",
-      "cpuRequest": "500m",
+      "cpuRequest": "100m",
       "cpuLimit": "1",
-      "memoryRequest": "1Gi",
+      "memoryRequest": "512Mi",
       "memoryLimit": "2Gi",
       "storage": "2Gi",
       "startupCommand": "/bin/sh",
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-09-19T05:21:02.220Z",
-      "updatedAt": "2026-09-19T05:21:02.220Z",
+      "createdAt": "2026-09-29T12:10:08.706Z",
+      "updatedAt": "2026-09-29T12:10:08.706Z",
       "instructionsMarkdown": "\n# Docker Playground (Ubuntu 24.04 Engine)\n\nWelcome to your isolated **Docker Playground** running on **Ubuntu 24.04 LTS**!\n\n---\n\n## Environment Architecture\n- **Operating System**: Ubuntu 24.04 LTS\n- **Docker Engine**: Installed automatically on boot via official `curl -fsSL https://get.docker.com | sh` script\n- **Daemon**: `dockerd` running natively in background with full container creation capability\n\n---\n\n## Guided Exercises\n\n### Step 1: Verify Installed Docker Engine & Daemon\nVerify CLI communication with the Docker daemon:\n\n```bash\ndocker version\ndocker info\n```\n\n### Step 2: Test Container Lifecycle & Hello-World\nRun a lightweight `hello-world` container:\n\n```bash\ndocker run hello-world\n```\n\n### Step 3: Pull & Inspect Alpine Linux Image\nPull the official `alpine` image:\n\n```bash\ndocker pull alpine\ndocker images\n```\n\n---\n\n## Tasks Checklist\n      ",
       "tasks": [
         {
@@ -140,6 +140,54 @@
       ]
     },
     {
+      "id": "lab-podman-playground",
+      "slug": "podman-playground",
+      "name": "Podman Playground",
+      "description": "Interactive Podman container sandbox running on the Standard GKE cluster with crun OCI runtime. Practice daemonless container lifecycle, image management, and Podman pods.",
+      "category": "Podman",
+      "difficulty": "Intermediate",
+      "durationMinutes": 60,
+      "dockerImage": "quay.io/podman/stable",
+      "cpuRequest": "250m",
+      "cpuLimit": "1",
+      "memoryRequest": "512Mi",
+      "memoryLimit": "2Gi",
+      "storage": "2Gi",
+      "startupCommand": "/bin/bash",
+      "terminalEnabled": true,
+      "browserAccess": true,
+      "isPublished": true,
+      "createdAt": "2026-09-29T12:10:08.706Z",
+      "updatedAt": "2026-09-29T12:10:08.706Z",
+      "instructionsMarkdown": "\n# Podman Playground (Standard GKE Cluster)\n\nWelcome to your isolated **Podman Playground** running with full rootful container capabilities on the **Standard Kubernetes Cluster**!\n\n---\n\n## What is Podman?\n**Podman** (Pod Manager) is an open-source, daemonless, OCI-compliant container engine developed by Red Hat. Unlike Docker, Podman:\n- Operates **without a background daemon** (`dockerd`) — every container is a direct child of the Podman process (managed via Conmon).\n- Provides native support for **Pods** (groups of containers sharing network and namespaces, identical to Kubernetes Pods).\n- Can generate and play Kubernetes YAML manifests directly using `podman kube generate` and `podman kube play`.\n- CLI syntax is 1:1 compatible with Docker (`alias docker=podman`).\n\n---\n\n## Guided Exercises\n\n### Step 1: Inspect Podman Engine & Host Environment\nVerify your Podman version and check the underlying OCI runtime (`crun`), storage graph driver (`overlay`), and network backend (`netavark`):\n\n```bash\npodman --version\npodman info\n```\n\n### Step 2: Pull and Manage OCI Images\nPull a lightweight Alpine Linux image from Docker Hub or Fedora registry:\n\n```bash\npodman pull alpine\npodman images\n```\n\n### Step 3: Run Interactive and Background Containers\nRun a container using Podman:\n\n```bash\n# Run a one-off Alpine container\npodman run --rm alpine uname -a\n\n# Run a named container in background\npodman run --name my-alpine -d alpine sleep 3600\npodman ps -a\n```\n\n### Step 4: Work with Podman Pods\nPodman's flagship feature is managing pods without requiring a Kubernetes cluster:\n\n```bash\n# Create a new Pod named web-pod\npodman pod create --name web-pod -p 8080:80\n\n# List pods\npodman pod ps\n\n# Run a container inside the pod\npodman run -d --pod web-pod --name web-server nginx:alpine\npodman pod inspect web-pod\n```\n\n---\n\n## Tasks Checklist\n      ",
+      "tasks": [
+        {
+          "id": "task-podman-1",
+          "title": "1. Verify Podman Engine & Version",
+          "description": "Run `podman --version` or `podman info` in the terminal to inspect the active Podman engine.",
+          "validationScript": "podman --version || podman info"
+        },
+        {
+          "id": "task-podman-2",
+          "title": "2. Pull Alpine Container Image",
+          "description": "Pull the `alpine` image from registry using `podman pull alpine`.",
+          "validationScript": "podman images | grep -q \"alpine\" || podman image exists alpine"
+        },
+        {
+          "id": "task-podman-3",
+          "title": "3. Run a Container with Podman",
+          "description": "Run a container named `my-alpine` or any container using `podman run`.",
+          "validationScript": "podman ps -a | grep -iE \"alpine|my-alpine\" || [ $(podman ps -a -q | wc -l) -gt 0 ]"
+        },
+        {
+          "id": "task-podman-4",
+          "title": "4. Create a Podman Pod",
+          "description": "Create a Podman pod named `web-pod` using `podman pod create --name web-pod`.",
+          "validationScript": "podman pod exists web-pod || podman pod ps | grep -q \"web-pod\""
+        }
+      ]
+    },
+    {
       "id": "lab-kubernetes-basics",
       "slug": "kubernetes-basics",
       "name": "Kubernetes Pods & Workload Basics",
@@ -156,8 +204,8 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-09-19T05:21:02.220Z",
-      "updatedAt": "2026-09-19T05:21:02.220Z",
+      "createdAt": "2026-09-29T12:10:08.706Z",
+      "updatedAt": "2026-09-29T12:10:08.706Z",
       "instructionsMarkdown": "\n# Kubernetes Basics & Workloads\n\nLearn how Kubernetes manifests configure Pod specs and deployments.\n\n```bash\ncat << 'EOF' > pod.yaml\napiVersion: v1\nkind: Pod\nmetadata:\n  name: nginx-pod\nspec:\n  containers:\n  - name: nginx\n    image: nginx:alpine\nEOF\ncat pod.yaml\n```\n      ",
       "tasks": [
         {
@@ -185,8 +233,8 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-09-19T05:21:02.220Z",
-      "updatedAt": "2026-09-19T05:21:02.220Z",
+      "createdAt": "2026-09-29T12:10:08.706Z",
+      "updatedAt": "2026-09-29T12:10:08.706Z",
       "instructionsMarkdown": "\n# Git Branching & Version Control\n\nPractice initializing repositories and managing branches.\n\n```bash\nmkdir my-repo && cd my-repo\ngit init\ngit config user.name \"Student\"\ngit config user.email \"student@byolabs.in\"\necho \"Initial commit\" > README.md\ngit add .\ngit commit -m \"Initial commit\"\n```\n      ",
       "tasks": [
         {
@@ -215,8 +263,8 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-09-19T05:21:02.220Z",
-      "updatedAt": "2026-09-19T05:21:02.220Z",
+      "createdAt": "2026-09-29T12:10:08.706Z",
+      "updatedAt": "2026-09-29T12:10:08.706Z",
       "instructionsMarkdown": "\n# RHCSA & CLA Module 1 Gradable Tasks\n*Unnati Development and Training Center*\n\nWelcome to your Linux RHCSA & CLA Module 1 practical lab environment. Execute the commands in the terminal window to fulfill all 12 gradable task requirements.\n      ",
       "tasks": [
         {
@@ -311,8 +359,8 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-09-19T05:21:02.220Z",
-      "updatedAt": "2026-09-19T05:21:02.220Z",
+      "createdAt": "2026-09-29T12:10:08.706Z",
+      "updatedAt": "2026-09-29T12:10:08.706Z",
       "instructionsMarkdown": "\n# RHCSA & CLA Module 2 Gradable Tasks\n*Unnati Development and Training Center Pvt Ltd*\n\nWelcome to your Linux RHCSA & CLA Module 2 practical lab environment. Execute the commands in the terminal window to fulfill all 14 gradable user and group administration task requirements.\n      ",
       "tasks": [
         {

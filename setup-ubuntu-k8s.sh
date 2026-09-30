@@ -52,8 +52,7 @@ fi
 echo -e "\n${BLUE}[3/6] Setting up Kubernetes engine & GubeConfig contexts...${NC}"
 
 if command -v gcloud &> /dev/null; then
-  echo -e "${YELLOW}Fetching GKE credentials for Autopilot and Standard DinD clusters...${NC}"
-  gcloud container clusters get-credentials autopilot-cluster-2-spot --region asia-south1 --project gdg-test-458407 2>/dev/null || true
+  echo -e "${YELLOW}Fetching GKE credentials for Standard cluster (byo-dind-cluster)...${NC}"
   gcloud container clusters get-credentials byo-dind-cluster --zone us-central1-a --project gdg-test-458407 2>/dev/null || true
 fi
 

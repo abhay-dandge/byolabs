@@ -52,13 +52,12 @@
 3. Gateway invokes `@kubernetes/client-node` `Exec` stream API on target pod container stdin/stdout/stderr with TTY resize parameters.
 4. If running in local standalone development mode without an active K8s cluster, Gateway falls back gracefully to a secure isolated child process sandbox engine (pty/spawn) so full terminal functionality works end-to-end anywhere.
 
-### 2.3 Provisioning & Multi-Cluster Dispatch Workflow
+### 2.3 Provisioning & Cluster Dispatch Workflow
 1. User clicks **START LAB**.
 2. API verifies user status is `APPROVED` and checks user active lab quota (max active labs per user).
 3. API checks overall cluster resource capacity (Max cluster pods / memory budget).
-4. `LabProvisioner` identifies target cluster:
-   - **Standard GKE Cluster** (`byo-dind-cluster`): Dispatches container runtime workloads (**Docker DinD** and **Podman**) requiring rootful privileges, crun runtime, and emptyDir container storage mounts.
-   - **Autopilot GKE Cluster** (`autopilot-cluster-2-spot`): Dispatches standard unprivileged workloads (**Ubuntu Playground**, **Linux Fundamentals**, **RHCSA**, **Git**).
+4. `LabProvisioner` targets the **Standard GKE Cluster** (`byo-dind-cluster`):
+   - Hosts all lab workloads: Privileged container runtimes (**Docker DinD** and **Podman**) with rootful privileges, crun runtime, and emptyDir container storage mounts, as well as standard unprivileged workloads (**Ubuntu Playground**, **Linux Fundamentals**, **RHCSA**, **Git**).
 5. `LabProvisioner` generates unique `session_id` (e.g., `lab-7f8d29c4`).
 6. `LabProvisioner` creates target K8s Namespace (`lab-session-<id>`).
 7. `LabProvisioner` applies ResourceQuota to namespace.

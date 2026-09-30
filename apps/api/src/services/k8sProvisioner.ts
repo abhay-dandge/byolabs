@@ -4,7 +4,6 @@ import { db } from '../db/store.js';
 
 export class LabProvisionerService {
   private kubeConfig: k8s.KubeConfig | null = null;
-  private autopilotApi: k8s.CoreV1Api | null = null;
   private standardApi: k8s.CoreV1Api | null = null;
   private defaultApi: k8s.CoreV1Api | null = null;
   private isK8sAvailable: boolean = false;
@@ -14,56 +13,40 @@ export class LabProvisionerService {
   }
 
   private initK8sClient() {
-    const autopilotContext = process.env.AUTOPILOT_K8S_CONTEXT || 'gke_gdg-test-458407_asia-south1_autopilot-cluster-2-spot';
-    const standardContext = process.env.STANDARD_K8S_CONTEXT || 'gke_gdg-test-458407_us-central1-a_byo-dind-cluster';
+    const standardContext = process.env.STANDARD_K8S_CONTEXT || process.env.K8S_CONTEXT || 'gke_gdg-test-458407_us-central1-a_byo-dind-cluster';
 
     try {
       const kc = new k8s.KubeConfig();
-      if (process.env.KUBERNETES_SERVICE_HOST && !process.env.AUTOPILOT_K8S_CONTEXT) {
+      if (process.env.KUBERNETES_SERVICE_HOST && !process.env.STANDARD_K8S_CONTEXT && !process.env.K8S_CONTEXT) {
         kc.loadFromCluster();
-        this.defaultApi = kc.makeApiClient(k8s.CoreV1Api);
-        this.autopilotApi = this.defaultApi;
-        console.log('[K8sProvisioner] In-cluster K8s detected (Autopilot default via pod ServiceAccount)');
+        this.standardApi = kc.makeApiClient(k8s.CoreV1Api);
+        this.defaultApi = this.standardApi;
+        console.log('[K8sProvisioner] In-cluster K8s detected via pod ServiceAccount');
+      } else if (process.env.STANDARD_K8S_HOST && process.env.STANDARD_K8S_TOKEN) {
+        const cluster = {
+          name: 'byo-dind-cluster',
+          server: process.env.STANDARD_K8S_HOST,
+          skipTLSVerify: !process.env.STANDARD_K8S_CA_DATA,
+          caData: process.env.STANDARD_K8S_CA_DATA,
+        };
+        const user = { name: 'byolabs-user', token: process.env.STANDARD_K8S_TOKEN };
+        kc.loadFromClusterAndUser(cluster, user);
+        this.standardApi = kc.makeApiClient(k8s.CoreV1Api);
+        this.defaultApi = this.standardApi;
+        console.log(`[K8sProvisioner] Initialized Standard Cluster client via env endpoint (${process.env.STANDARD_K8S_HOST})`);
       } else {
-        // Init Autopilot client
+        kc.loadFromDefault();
         try {
-          const kcAuto = new k8s.KubeConfig();
-          kcAuto.loadFromDefault();
-          kcAuto.setCurrentContext(autopilotContext);
-          this.autopilotApi = kcAuto.makeApiClient(k8s.CoreV1Api);
-          console.log(`[K8sProvisioner] Initialized Autopilot Cluster client (${autopilotContext})`);
-        } catch (autoErr: any) {
-          console.warn(`[K8sProvisioner] Could not bind Autopilot cluster context '${autopilotContext}':`, autoErr?.message);
+          kc.setCurrentContext(standardContext);
+        } catch (ctxErr: any) {
+          console.warn(`[K8sProvisioner] Could not bind Standard cluster context '${standardContext}':`, ctxErr?.message);
         }
+        this.standardApi = kc.makeApiClient(k8s.CoreV1Api);
+        this.defaultApi = this.standardApi;
+        console.log(`[K8sProvisioner] Initialized Standard Cluster client (${kc.currentContext || standardContext})`);
       }
 
-      // Init Standard DinD client
-      try {
-        const kcStd = new k8s.KubeConfig();
-
-        if (process.env.STANDARD_K8S_HOST && process.env.STANDARD_K8S_TOKEN) {
-          const cluster = {
-            name: 'byo-dind-cluster',
-            server: process.env.STANDARD_K8S_HOST,
-            skipTLSVerify: !process.env.STANDARD_K8S_CA_DATA,
-            caData: process.env.STANDARD_K8S_CA_DATA,
-          };
-          const user = { name: 'byolabs-user', token: process.env.STANDARD_K8S_TOKEN };
-          kcStd.loadFromClusterAndUser(cluster, user);
-          this.standardApi = kcStd.makeApiClient(k8s.CoreV1Api);
-          console.log(`[K8sProvisioner] Initialized Standard DinD Cluster client via env endpoint (${process.env.STANDARD_K8S_HOST})`);
-        } else {
-          kcStd.loadFromDefault();
-          kcStd.setCurrentContext(standardContext);
-          this.standardApi = kcStd.makeApiClient(k8s.CoreV1Api);
-          console.log(`[K8sProvisioner] Initialized Standard DinD Cluster client (${standardContext})`);
-        }
-      } catch (stdErr: any) {
-        console.warn(`[K8sProvisioner] Could not bind Standard DinD cluster context '${standardContext}':`, stdErr?.message);
-      }
-
-      this.defaultApi = this.standardApi || this.autopilotApi;
-      if (this.autopilotApi || this.standardApi || this.defaultApi) {
+      if (this.standardApi || this.defaultApi) {
         this.isK8sAvailable = true;
       }
     } catch (err: any) {
@@ -81,21 +64,16 @@ export class LabProvisionerService {
   }
 
   public getKubeConfigForSession(session: LabSession): k8s.KubeConfig | null {
-    const isDockerLab = session.labSlug?.includes('docker') || session.labId?.includes('docker');
-    const isPodmanLab = session.labSlug?.includes('podman') || session.labId?.includes('podman');
-    const isStandardCluster = isDockerLab || isPodmanLab;
-    const autopilotContext = process.env.AUTOPILOT_K8S_CONTEXT || 'gke_gdg-test-458407_asia-south1_autopilot-cluster-2-spot';
-    const standardContext = process.env.STANDARD_K8S_CONTEXT || 'gke_gdg-test-458407_us-central1-a_byo-dind-cluster';
-    const targetContext = isStandardCluster ? standardContext : autopilotContext;
+    const standardContext = process.env.STANDARD_K8S_CONTEXT || process.env.K8S_CONTEXT || 'gke_gdg-test-458407_us-central1-a_byo-dind-cluster';
 
     try {
       const kc = new k8s.KubeConfig();
-      if (process.env.KUBERNETES_SERVICE_HOST && !isStandardCluster && !process.env.AUTOPILOT_K8S_CONTEXT) {
+      if (process.env.KUBERNETES_SERVICE_HOST && !process.env.STANDARD_K8S_CONTEXT && !process.env.K8S_CONTEXT) {
         kc.loadFromCluster();
         return kc;
       }
 
-      if (isStandardCluster && process.env.STANDARD_K8S_HOST && process.env.STANDARD_K8S_TOKEN) {
+      if (process.env.STANDARD_K8S_HOST && process.env.STANDARD_K8S_TOKEN) {
         const cluster = {
           name: 'byo-dind-cluster',
           server: process.env.STANDARD_K8S_HOST,
@@ -108,36 +86,26 @@ export class LabProvisionerService {
       }
 
       kc.loadFromDefault();
-      kc.setCurrentContext(targetContext);
+      try {
+        kc.setCurrentContext(standardContext);
+      } catch (e) {}
       return kc;
     } catch (err: any) {
-      console.warn(`[K8sProvisioner] Failed to load KubeConfig for session ${session.id} (Context: ${targetContext}):`, err?.message);
+      console.warn(`[K8sProvisioner] Failed to load KubeConfig for session ${session.id} (Context: ${standardContext}):`, err?.message);
       return this.kubeConfig;
     }
   }
 
-  public getClusterContextForSession(session: LabSession): string {
-    const isDockerLab = session.labSlug?.includes('docker') || session.labId?.includes('docker');
-    const isPodmanLab = session.labSlug?.includes('podman') || session.labId?.includes('podman');
-    const isStandardCluster = isDockerLab || isPodmanLab;
-    return isStandardCluster
-      ? (process.env.STANDARD_K8S_CONTEXT || 'gke_gdg-test-458407_us-central1-a_byo-dind-cluster')
-      : (process.env.AUTOPILOT_K8S_CONTEXT || 'gke_gdg-test-458407_asia-south1_autopilot-cluster-2-spot');
+  public getClusterContextForSession(_session: LabSession): string {
+    return process.env.STANDARD_K8S_CONTEXT || process.env.K8S_CONTEXT || 'gke_gdg-test-458407_us-central1-a_byo-dind-cluster';
   }
 
-  private getClusterApiForLab(lab: Lab): { api: k8s.CoreV1Api; clusterName: string; isStandardCluster: boolean } {
-    const isDockerLab = lab.category === 'Docker' || lab.slug?.includes('docker') || lab.dockerImage?.includes('dind') || lab.dockerImage === 'docker:27-cli';
-    const isPodmanLab = lab.category === 'Podman' || lab.slug?.includes('podman') || (lab.dockerImage && lab.dockerImage.includes('podman'));
-    const isStandardClusterLab = isDockerLab || isPodmanLab;
-
-    if (isStandardClusterLab && this.standardApi) {
-      return { api: this.standardApi, clusterName: 'Standard GKE (byo-dind-cluster)', isStandardCluster: true };
-    }
-    if (this.autopilotApi) {
-      return { api: this.autopilotApi, clusterName: 'Autopilot GKE (autopilot-cluster-2-spot)', isStandardCluster: false };
+  private getClusterApiForLab(_lab: Lab): { api: k8s.CoreV1Api; clusterName: string } {
+    if (this.standardApi) {
+      return { api: this.standardApi, clusterName: 'Standard GKE (byo-dind-cluster)' };
     }
     if (this.defaultApi) {
-      return { api: this.defaultApi, clusterName: 'Default GKE', isStandardCluster: false };
+      return { api: this.defaultApi, clusterName: 'Standard GKE' };
     }
     throw new Error('No valid Kubernetes API client available');
   }
@@ -166,7 +134,7 @@ export class LabProvisionerService {
   private async provisionK8sLab(session: LabSession, lab: Lab): Promise<void> {
     const namespace = session.namespace;
     const podName = session.podName;
-    const { api: coreV1Api, clusterName, isStandardCluster } = this.getClusterApiForLab(lab);
+    const { api: coreV1Api, clusterName } = this.getClusterApiForLab(lab);
 
     console.log(`[K8sProvisioner] Provisioning lab '${lab.name}' on cluster target: ${clusterName}`);
     db.addLog('info', 'Provisioner', `Targeting ${clusterName} for session ${session.id}`);
@@ -229,9 +197,10 @@ export class LabProvisionerService {
       containerCommand = ['/bin/bash'];
     }
 
-    const securityContext: k8s.V1SecurityContext = isDind || isStandardCluster
+    const isPrivilegedLab = isDind || isSidecarDind || isPodmanLab;
+    const securityContext: k8s.V1SecurityContext = isPrivilegedLab
       ? { privileged: true, allowPrivilegeEscalation: true, readOnlyRootFilesystem: false }
-      : { allowPrivilegeEscalation: false, readOnlyRootFilesystem: false };
+      : { privileged: false, allowPrivilegeEscalation: true, readOnlyRootFilesystem: false };
 
     // 3. Create Pod Spec
     let podSpec: k8s.V1Pod;
@@ -442,9 +411,10 @@ export class LabProvisionerService {
   public async deleteLab(session: LabSession): Promise<void> {
     db.addLog('info', 'Provisioner', `Tearing down lab resources for session ${session.id}`);
 
-    const apis = [this.standardApi, this.autopilotApi, this.defaultApi].filter((a): a is k8s.CoreV1Api => a !== null);
+    const apis = [this.standardApi, this.defaultApi].filter((a): a is k8s.CoreV1Api => a !== null);
+    const uniqueApis = Array.from(new Set(apis));
 
-    for (const api of apis) {
+    for (const api of uniqueApis) {
       try {
         await api.deleteNamespace(session.namespace);
         console.log(`[K8sProvisioner] Deleted namespace ${session.namespace}`);

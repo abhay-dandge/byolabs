@@ -220,7 +220,7 @@ export const AdminDashboardPage: React.FC = () => {
             <Shield className="w-8 h-8 text-indigo-400 mr-3" /> Admin Infrastructure Console
           </h1>
           <p className="text-slate-400 text-sm mt-1">
-            Manage user approvals, control lab time limits, monitor 2 Kubernetes clusters, and inspect live pod workloads.
+            Manage user approvals, control lab time limits, monitor Kubernetes DinD cluster, and inspect live pod workloads.
           </p>
         </div>
 
@@ -254,10 +254,10 @@ export const AdminDashboardPage: React.FC = () => {
         </div>
 
         <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800">
-          <div className="text-xs font-mono text-slate-400 uppercase">Active Clusters</div>
-          <div className="text-2xl font-extrabold text-emerald-400 mt-1 font-mono">{clusters.length || 2} Clusters</div>
+          <div className="text-xs font-mono text-slate-400 uppercase">Active Cluster</div>
+          <div className="text-2xl font-extrabold text-emerald-400 mt-1 font-mono">{clusters.length} Cluster{clusters.length === 1 ? '' : 's'}</div>
           <div className="text-xs text-emerald-400 mt-1 flex items-center">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 mr-1 animate-pulse"></span> Control Planes Ready
+            <span className="w-2 h-2 rounded-full bg-emerald-400 mr-1 animate-pulse"></span> Control Plane Online
           </div>
         </div>
       </div>
@@ -300,7 +300,7 @@ export const AdminDashboardPage: React.FC = () => {
           onClick={() => setActiveTab('cluster')}
           className={`pb-3 transition relative ${activeTab === 'cluster' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400 hover:text-white'}`}
         >
-          2 K8s Clusters Resource Usage
+          Cluster Resource Usage
         </button>
 
         <button
@@ -825,25 +825,25 @@ export const AdminDashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* TAB CONTENT: 2 KUBERNETES CLUSTERS RESOURCE USAGE */}
+      {/* TAB CONTENT: CLUSTER RESOURCE USAGE */}
       {activeTab === 'cluster' && (
         <div className="space-y-6">
           <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-800 flex justify-between items-center shadow-xl">
             <div>
               <h2 className="text-xl font-bold text-white flex items-center">
-                <Server className="w-6 h-6 text-cyan-400 mr-2.5" /> 2 Multi-Cluster Infrastructure Monitoring
+                <Server className="w-6 h-6 text-cyan-400 mr-2.5" /> DinD Cluster Resource & Workload Infrastructure
               </h2>
               <p className="text-xs text-slate-400 mt-1">
-                Real-time workload distribution across Cluster 1 (Production) & Cluster 2 (Secondary Sandbox).
+                Real-time metrics, node telemetry, and container workload utilization from the DinD Kubernetes cluster.
               </p>
             </div>
             <div className="flex items-center space-x-2 bg-emerald-950 border border-emerald-800/80 px-3 py-1.5 rounded-xl text-emerald-300 text-xs font-mono font-bold">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>2/2 Clusters Online</span>
+              <span>{clusters.filter((c) => c.controlPlaneReady).length}/{clusters.length || 1} Cluster Online</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className={clusters.length === 1 ? 'grid grid-cols-1 gap-6' : 'grid grid-cols-1 lg:grid-cols-2 gap-6'}>
             {clusters.map((cls, idx) => (
               <div key={cls.id || idx} className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-5 shadow-2xl">
                 {/* Cluster Header */}

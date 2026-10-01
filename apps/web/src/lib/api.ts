@@ -1,4 +1,4 @@
-import { User, Lab, LabSession, ClusterStatus, ClusterInfo, SystemLog, AuditLog, SystemSettings, UserUsageReport, PasswordResetItem } from '@byolabs/shared';
+import { User, Lab, LabSession, ClusterStatus, ClusterInfo, SystemLog, AuditLog, SystemSettings, UserUsageReport, PasswordResetItem, PortInfo } from '@byolabs/shared';
 
 const API_BASE = '/api/v1';
 
@@ -60,6 +60,7 @@ export const api = {
   getMyActiveSessions: () => request<{ sessions: LabSession[] }>('/labs/my-labs/active'),
   getMyUsage: () => request<{ usage: UserUsageReport }>('/labs/my-usage'),
   getSession: (sessionId: string) => request<{ session: LabSession; lab: Lab }>(`/labs/sessions/${sessionId}`),
+  getSessionPorts: (sessionId: string) => request<{ ports: PortInfo[] }>(`/labs/sessions/${sessionId}/ports`),
   startLab: (labId: string) => request<{ message: string; session: LabSession }>(`/labs/${labId}/start`, { method: 'POST' }),
   stopLab: (sessionId: string) => request<{ message: string; session: LabSession }>(`/labs/sessions/${sessionId}/stop`, { method: 'POST' }),
   resetLab: (sessionId: string) => request<{ message: string; session: LabSession }>(`/labs/sessions/${sessionId}/reset`, { method: 'POST' }),

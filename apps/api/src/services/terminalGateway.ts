@@ -21,7 +21,6 @@ export function setupTerminalGateway(server: Server) {
     // Route: /api/v1/labs/:sessionId/terminal
     const match = pathname.match(/^\/api\/v1\/labs\/([a-zA-Z0-9_-]+)\/terminal$/);
     if (!match) {
-      socket.destroy();
       return;
     }
 

@@ -119,7 +119,7 @@ export interface ClusterInfo {
   id: string;
   name: string;
   region: string;
-  type: 'Production K8s Cluster' | 'Development / Sandbox Cluster';
+  type: 'Production K8s Cluster' | 'Development / Sandbox Cluster' | string;
   controlPlaneReady: boolean;
   activeLabsCount: number;
   maxLabsCapacity: number;
@@ -208,5 +208,11 @@ export interface PasswordResetItem {
   status: PasswordResetStatus;
   createdAt: string;
   reviewedAt?: string;
+}
+
+export interface PortInfo {
+  port: number;
+  label?: string;
+  isCommon?: boolean;
 }
 

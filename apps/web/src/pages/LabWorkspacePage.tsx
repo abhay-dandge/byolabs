@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { api } from '../lib/api';
-import { Lab, LabSession } from '@byolabs/shared';
+import { api, getToken } from '../lib/api';
+import { Lab, LabSession, PortInfo } from '@byolabs/shared';
 import { TerminalView } from '../components/TerminalView';
 import { InstructionsPanel } from '../components/InstructionsPanel';
-import { Terminal, Clock, RefreshCw, Square, ArrowLeft, CheckCircle2, AlertCircle, Award } from 'lucide-react';
+import { Terminal, Clock, RefreshCw, Square, ArrowLeft, CheckCircle2, AlertCircle, Award, Globe, ExternalLink, Columns } from 'lucide-react';
 import { CertificateModal } from '../components/CertificateModal';
+import { PortPreviewPanel } from '../components/PortPreviewPanel';
 import { useAuth } from '../context/AuthContext';
 
 export const LabWorkspacePage: React.FC = () => {
@@ -23,6 +24,35 @@ export const LabWorkspacePage: React.FC = () => {
   const isDockerLab = lab?.category === 'Docker' || lab?.category === 'Podman' || lab?.slug?.includes('docker') || lab?.slug?.includes('podman') || lab?.dockerImage?.includes('docker') || lab?.dockerImage?.includes('podman');
   const initialCountdown = isDockerLab ? 90 : 30;
   const [startupCountdown, setStartupCountdown] = useState<number>(90);
+
+  // Port Preview States
+  const [detectedPorts, setDetectedPorts] = useState<PortInfo[]>([]);
+  const [currentPreviewPort, setCurrentPreviewPort] = useState<number>(8080);
+  const [activeRightTab, setActiveRightTab] = useState<'terminal' | 'preview' | 'split'>('terminal');
+  const [showPortsDropdown, setShowPortsDropdown] = useState<boolean>(false);
+  const [customPortInput, setCustomPortInput] = useState<string>('');
+
+  const fetchPorts = async () => {
+    if (!sessionId) return;
+    try {
+      const res = await api.getSessionPorts(sessionId);
+      setDetectedPorts(res.ports || []);
+      const activePort = res.ports?.find((p) => !p.isCommon);
+      if (activePort && currentPreviewPort === 8080) {
+        setCurrentPreviewPort(activePort.port);
+      }
+    } catch (e) {
+      // non-fatal
+    }
+  };
+
+  useEffect(() => {
+    if (session && session.status === 'RUNNING') {
+      fetchPorts();
+      const interval = setInterval(fetchPorts, 8000);
+      return () => clearInterval(interval);
+    }
+  }, [session?.status, sessionId]);
 
   useEffect(() => {
     if (lab) {
@@ -267,6 +297,143 @@ export const LabWorkspacePage: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-2">
+            {/* Ports & Web Preview Dropdown Button */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowPortsDropdown(!showPortsDropdown);
+                  fetchPorts();
+                }}
+                className={`px-3 py-1.5 rounded-lg border text-xs font-sans font-semibold flex items-center space-x-1.5 transition ${
+                  detectedPorts.some((p) => !p.isCommon)
+                    ? 'bg-cyan-950/80 border-cyan-700 text-cyan-300 hover:bg-cyan-900'
+                    : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300'
+                }`}
+                title="Container Ports & Live Web Preview"
+              >
+                <Globe className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Ports & Preview</span>
+                {detectedPorts.some((p) => !p.isCommon) && (
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5"></span>
+                )}
+              </button>
+
+              {showPortsDropdown && (
+                <div className="absolute right-0 mt-2 w-80 bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-2xl z-50 space-y-3 font-sans">
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                      <Globe className="w-3.5 h-3.5 mr-1.5 text-cyan-400" /> Container Port Access
+                    </h4>
+                    <button
+                      onClick={fetchPorts}
+                      className="p-1 rounded text-slate-400 hover:text-white"
+                      title="Refresh listening ports"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  {/* Active Detected Ports */}
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] uppercase font-mono text-slate-400">Detected Active Services</div>
+                    {detectedPorts.filter((p) => !p.isCommon).length === 0 ? (
+                      <div className="text-xs text-slate-400 italic bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/60 text-center">
+                        No running service detected yet. Start your server inside the container (e.g. on port 8080).
+                      </div>
+                    ) : (
+                      detectedPorts
+                        .filter((p) => !p.isCommon)
+                        .map((dp) => (
+                          <div
+                            key={dp.port}
+                            className="flex items-center justify-between p-2 rounded-xl bg-slate-950 border border-emerald-900/60 text-xs font-mono"
+                          >
+                            <div className="flex items-center space-x-1.5">
+                              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                              <span className="font-bold text-emerald-300">:{dp.port}</span>
+                              <span className="text-[10px] text-slate-400 font-sans truncate max-w-[100px]">{dp.label?.replace(' (Active)', '')}</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <button
+                                onClick={() => {
+                                  setCurrentPreviewPort(dp.port);
+                                  setActiveRightTab('preview');
+                                  setShowPortsDropdown(false);
+                                }}
+                                className="px-2 py-0.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[10px] font-sans transition"
+                              >
+                                Preview
+                              </button>
+                              <button
+                                onClick={() => {
+                                  window.open(`/proxy/${session.id}/${dp.port}/?token=${encodeURIComponent(getToken() || '')}`, '_blank');
+                                  setShowPortsDropdown(false);
+                                }}
+                                className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300"
+                                title="Open in new tab"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                    )}
+                  </div>
+
+                  {/* Quick Launch Buttons */}
+                  <div className="space-y-1.5 pt-1">
+                    <div className="text-[10px] uppercase font-mono text-slate-400">Quick Access Ports</div>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {[80, 3000, 5000, 8080].map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => {
+                            setCurrentPreviewPort(p);
+                            setActiveRightTab('preview');
+                            setShowPortsDropdown(false);
+                          }}
+                          className="py-1 px-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs font-mono text-slate-200 text-center transition"
+                        >
+                          :{p}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Custom Port Launcher */}
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const p = parseInt(customPortInput, 10);
+                      if (!isNaN(p) && p > 0 && p < 65536) {
+                        setCurrentPreviewPort(p);
+                        setActiveRightTab('preview');
+                        setCustomPortInput('');
+                        setShowPortsDropdown(false);
+                      }
+                    }}
+                    className="pt-2 border-t border-slate-800 flex items-center space-x-1.5"
+                  >
+                    <input
+                      type="number"
+                      min="1"
+                      max="65535"
+                      placeholder="Custom port..."
+                      value={customPortInput}
+                      onChange={(e) => setCustomPortInput(e.target.value)}
+                      className="flex-1 px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-mono focus:outline-none focus:border-cyan-500"
+                    />
+                    <button
+                      type="submit"
+                      className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition"
+                    >
+                      Open
+                    </button>
+                  </form>
+                </div>
+              )}
+            </div>
+
             {session.completedTasks.length === lab.tasks.length && lab.tasks.length > 0 && (
               <button
                 onClick={() => setShowCertModal(true)}
@@ -300,14 +467,105 @@ export const LabWorkspacePage: React.FC = () => {
 
       {/* Main Split Layout Workspace */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 overflow-hidden">
-        {/* Left Pane: Instructions & Tasks (35% -> col-span-4) */}
+        {/* Left Pane: Instructions & Tasks (35% -> col-span-5) */}
         <div className="lg:col-span-5 h-full overflow-hidden">
           <InstructionsPanel lab={lab} session={session} onSessionUpdate={(s) => setSession(s)} />
         </div>
 
-        {/* Right Pane: Browser Terminal (65% -> col-span-7) */}
-        <div className="lg:col-span-7 h-full overflow-hidden">
-          <TerminalView sessionId={session.id} />
+        {/* Right Pane: Browser Terminal & Live Web Preview (65% -> col-span-7) */}
+        <div className="lg:col-span-7 h-full flex flex-col overflow-hidden space-y-2">
+          {/* Right Pane Header Tab Bar */}
+          <div className="flex items-center justify-between bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800 flex-shrink-0 text-xs font-mono">
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={() => setActiveRightTab('terminal')}
+                className={`px-3 py-1 rounded-lg transition flex items-center space-x-1 ${
+                  activeRightTab === 'terminal' ? 'bg-slate-800 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Terminal className="w-3.5 h-3.5 mr-1 text-cyan-400" />
+                <span>Terminal</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveRightTab('preview');
+                  fetchPorts();
+                }}
+                className={`px-3 py-1 rounded-lg transition flex items-center space-x-1 ${
+                  activeRightTab === 'preview' ? 'bg-cyan-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Globe className="w-3.5 h-3.5 mr-1" />
+                <span>Web Preview (:{currentPreviewPort})</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveRightTab('split');
+                  fetchPorts();
+                }}
+                className={`px-3 py-1 rounded-lg transition flex items-center space-x-1 ${
+                  activeRightTab === 'split' ? 'bg-indigo-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
+                }`}
+                title="Split View (Terminal & Web Preview)"
+              >
+                <Columns className="w-3.5 h-3.5 mr-1" />
+                <span>Split</span>
+              </button>
+            </div>
+
+            {activeRightTab !== 'terminal' && (
+              <button
+                onClick={() => window.open(`/proxy/${session.id}/${currentPreviewPort}/?token=${encodeURIComponent(getToken() || '')}`, '_blank')}
+                className="text-slate-400 hover:text-cyan-400 text-[11px] flex items-center space-x-1"
+                title="Open port in new tab"
+              >
+                <ExternalLink className="w-3 h-3" />
+                <span>Popout Tab</span>
+              </button>
+            )}
+          </div>
+
+          {/* Right Pane Content Area */}
+          <div className="flex-1 overflow-hidden">
+            {activeRightTab === 'terminal' && (
+              <div className="h-full">
+                <TerminalView sessionId={session.id} />
+              </div>
+            )}
+
+            {activeRightTab === 'preview' && (
+              <div className="h-full">
+                <PortPreviewPanel
+                  sessionId={session.id}
+                  currentPort={currentPreviewPort}
+                  onPortChange={setCurrentPreviewPort}
+                  detectedPorts={detectedPorts}
+                  onRefreshPorts={fetchPorts}
+                  onClose={() => setActiveRightTab('terminal')}
+                />
+              </div>
+            )}
+
+            {activeRightTab === 'split' && (
+              <div className="h-full flex flex-col gap-2">
+                <div className="h-1/2 overflow-hidden">
+                  <TerminalView sessionId={session.id} />
+                </div>
+                <div className="h-1/2 overflow-hidden">
+                  <PortPreviewPanel
+                    sessionId={session.id}
+                    currentPort={currentPreviewPort}
+                    onPortChange={setCurrentPreviewPort}
+                    detectedPorts={detectedPorts}
+                    onRefreshPorts={fetchPorts}
+                    onClose={() => setActiveRightTab('terminal')}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

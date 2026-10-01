@@ -4,6 +4,7 @@ import { db } from '../db/store.js';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth.js';
 import { k8sProvisioner } from '../services/k8sProvisioner.js';
 import { taskValidator } from '../services/taskValidator.js';
+import { portProxyService } from '../services/portProxyService.js';
 import { LabSession } from '@byolabs/shared';
 
 const router = Router();
@@ -46,6 +47,24 @@ router.get('/sessions/:sessionId', authenticate, (req: AuthenticatedRequest, res
   }
   const lab = db.getLabById(session.labId);
   return res.json({ session, lab });
+});
+
+// GET /api/v1/labs/sessions/:sessionId/ports — Get active listening & common ports in lab pod
+router.get('/sessions/:sessionId/ports', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  const session = db.getSessionById(req.params.sessionId);
+  if (!session) {
+    return res.status(404).json({ error: 'Session not found' });
+  }
+  if (session.userId !== req.user!.id && req.user!.role !== 'ADMIN') {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  try {
+    const ports = await portProxyService.getListeningPorts(session);
+    return res.json({ ports });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || 'Failed to detect ports' });
+  }
 });
 
 // POST /api/v1/labs/:id/start — Launch a lab session
@@ -154,6 +173,7 @@ router.post('/sessions/:sessionId/stop', authenticate, async (req: Authenticated
     session.status = 'STOPPING';
     db.updateSession(session);
 
+    portProxyService.stopSessionForwards(session.id);
     await k8sProvisioner.deleteLab(session);
 
     session.status = 'STOPPED';
@@ -184,6 +204,7 @@ router.post('/sessions/:sessionId/reset', authenticate, async (req: Authenticate
     }
 
     // Teardown and re-provision
+    portProxyService.stopSessionForwards(session.id);
     await k8sProvisioner.deleteLab(session);
     session.status = 'STARTING';
     session.completedTasks = [];

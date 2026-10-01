@@ -258,78 +258,19 @@ router.post('/users/approve-all', (req: AuthenticatedRequest, res: Response) => 
 });
 
 // ================= CLUSTER HEALTH & SYSTEM STATUS ================= //
-router.get('/cluster', (req, res) => {
-  const activeSessions = db.getSessions().filter((s) => s.status === 'RUNNING' || s.status === 'STARTING');
-  const isK8s = k8sProvisioner.getIsK8sAvailable();
+router.get('/cluster', async (req, res) => {
+  try {
+    const isK8s = k8sProvisioner.getIsK8sAvailable();
+    const dindCluster = await k8sProvisioner.getClusterMetrics();
 
-  const totalMaxCapacity = db.getSettings().maxClusterLabs || 50;
-  const c1Active = Math.ceil(activeSessions.length / 2);
-  const c2Active = activeSessions.length - c1Active;
-
-  const cluster1 = {
-    id: 'cluster-01-prod',
-    name: 'Cluster 1 — Production K8s Primary',
-    region: 'us-east-1 (Primary)',
-    type: 'Production K8s Cluster',
-    controlPlaneReady: true,
-    activeLabsCount: c1Active,
-    maxLabsCapacity: Math.ceil(totalMaxCapacity / 2),
-    nodes: [
-      {
-        name: 'prod-k8s-master-01',
-        status: 'Ready',
-        role: 'control-plane',
-        cpuUsage: '32%',
-        memoryUsage: '44%',
-        podsCount: c1Active + 6,
-      },
-      {
-        name: 'prod-k8s-worker-01',
-        status: 'Ready',
-        role: 'worker',
-        cpuUsage: '54%',
-        memoryUsage: '60%',
-        podsCount: c1Active,
-      },
-    ],
-    totalCpuUsagePercent: 43,
-    totalMemoryUsagePercent: 52,
-  };
-
-  const cluster2 = {
-    id: 'cluster-02-dev',
-    name: 'Cluster 2 — Secondary K8s Sandbox',
-    region: 'ap-south-1 (Secondary)',
-    type: 'Development / Sandbox Cluster',
-    controlPlaneReady: true,
-    activeLabsCount: c2Active,
-    maxLabsCapacity: Math.floor(totalMaxCapacity / 2),
-    nodes: [
-      {
-        name: 'sandbox-k8s-master-01',
-        status: 'Ready',
-        role: 'control-plane',
-        cpuUsage: '18%',
-        memoryUsage: '28%',
-        podsCount: c2Active + 4,
-      },
-      {
-        name: 'sandbox-k8s-worker-01',
-        status: 'Ready',
-        role: 'worker',
-        cpuUsage: '30%',
-        memoryUsage: '36%',
-        podsCount: c2Active,
-      },
-    ],
-    totalCpuUsagePercent: 24,
-    totalMemoryUsagePercent: 32,
-  };
-
-  return res.json({
-    clusters: [cluster1, cluster2],
-    isK8sAvailable: isK8s,
-  });
+    return res.json({
+      clusters: [dindCluster],
+      isK8sAvailable: isK8s,
+    });
+  } catch (err: any) {
+    console.error('[Admin] Error fetching DinD cluster metrics:', err);
+    return res.status(500).json({ error: 'Failed to retrieve cluster metrics' });
+  }
 });
 
 router.get('/logs', (req, res) => {

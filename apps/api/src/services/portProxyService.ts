@@ -138,8 +138,9 @@ export class PortProxyService {
             const hexPort = addr.split(':')[1];
             if (hexPort) {
               const portNum = parseInt(hexPort, 16);
-              // Ignore SSH port 22 and invalid numbers
-              if (portNum > 0 && portNum < 65536 && portNum !== 22) {
+              // Ignore SSH (22), Docker daemon (2375/2376/2377), DNS (53), and K8s internal daemon ports
+              const ignoredPorts = new Set([22, 53, 2375, 2376, 2377, 6443, 10250, 10255, 10256]);
+              if (portNum > 0 && portNum < 65536 && !ignoredPorts.has(portNum)) {
                 detectedPorts.add(portNum);
               }
             }
@@ -235,7 +236,10 @@ export class PortProxyService {
             proxyRes.on('data', (c) => chunks.push(c));
             proxyRes.on('end', () => {
               let body = Buffer.concat(chunks).toString('utf-8');
-              const baseTag = `<base href="/proxy/${session.id}/${targetPort}/">`;
+              const prefix = (req.url && req.url.includes('/api/v1/proxy'))
+                ? `/api/v1/proxy/${session.id}/${targetPort}/`
+                : `/proxy/${session.id}/${targetPort}/`;
+              const baseTag = `<base href="${prefix}">`;
 
               if (body.includes('<head>')) {
                 body = body.replace('<head>', `<head>${baseTag}`);

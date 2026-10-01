@@ -26,7 +26,7 @@ export const PortPreviewPanel: React.FC<PortPreviewPanelProps> = ({
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const token = getToken() || '';
-  const proxyUrl = `/proxy/${sessionId}/${currentPort}/?token=${encodeURIComponent(token)}`;
+  const proxyUrl = `/api/v1/proxy/${sessionId}/${currentPort}/?token=${encodeURIComponent(token)}`;
 
   const handleRefresh = () => {
     setIsLoading(true);
@@ -116,10 +116,10 @@ export const PortPreviewPanel: React.FC<PortPreviewPanelProps> = ({
           </button>
 
           {/* Mock URL Bar */}
-          <div className="flex-1 flex items-center bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-[11px] font-mono text-slate-300 overflow-hidden">
+          <div className="flex-1 flex items-center bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-[11px] font-mono text-slate-300 min-w-0">
             <span className="text-slate-500 mr-1 select-none">http://</span>
-            <span className="text-white truncate">localhost:4000/proxy/{sessionId}/</span>
-            <span className="text-cyan-400 font-bold">{currentPort}</span>
+            <span className="text-slate-300 select-none">byolabs/</span>
+            <span className="text-cyan-400 font-bold truncate">port-{currentPort}</span>
             <span className="text-slate-500">/</span>
           </div>
 

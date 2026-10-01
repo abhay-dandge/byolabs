@@ -35,6 +35,7 @@ app.get('/ready', (req, res) => {
 
 // Dynamic Container Port Proxy Route (Killercoda-style port access)
 app.use('/proxy', proxyRoutes);
+app.use('/api/v1/proxy', proxyRoutes);
 
 // Fallback asset resolver for proxied web apps requesting absolute paths (e.g. /favicon.ico, /assets/...)
 app.use((req, res, next) => {
@@ -70,7 +71,7 @@ app.use((req, res, next) => {
   }
 
   if (targetInfo && !isNaN(targetInfo.port)) {
-    return res.redirect(`/proxy/${targetInfo.sessionId}/${targetInfo.port}${req.url}`);
+    return res.redirect(`/api/v1/proxy/${targetInfo.sessionId}/${targetInfo.port}${req.url}`);
   }
 
   next();
@@ -89,11 +90,11 @@ setupTerminalGateway(server);
 // Setup WebSocket port proxy for container web applications (Vite, HMR, Socket.io)
 server.on('upgrade', (request, socket, head) => {
   const url = new URL(request.url || '', `http://${request.headers.host}`);
-  const proxyMatch = url.pathname.match(/^\/proxy\/([a-zA-Z0-9_-]+)\/(\d+)(.*)/);
+  const proxyMatch = url.pathname.match(/^(\/api\/v1)?\/proxy\/([a-zA-Z0-9_-]+)\/(\d+)(.*)/);
   if (proxyMatch) {
-    const sessionId = proxyMatch[1];
-    const targetPort = parseInt(proxyMatch[2], 10);
-    const subPath = proxyMatch[3] || '/';
+    const sessionId = proxyMatch[2];
+    const targetPort = parseInt(proxyMatch[3], 10);
+    const subPath = proxyMatch[4] || '/';
     portProxyService.handleWebSocketUpgrade(request, socket, head, sessionId, targetPort, subPath);
     return;
   }

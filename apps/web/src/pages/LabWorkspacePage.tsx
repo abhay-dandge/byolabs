@@ -366,7 +366,7 @@ export const LabWorkspacePage: React.FC = () => {
                               </button>
                               <button
                                 onClick={() => {
-                                  window.open(`/proxy/${session.id}/${dp.port}/?token=${encodeURIComponent(getToken() || '')}`, '_blank');
+                                  window.open(`/api/v1/proxy/${session.id}/${dp.port}/?token=${encodeURIComponent(getToken() || '')}`, '_blank');
                                   setShowPortsDropdown(false);
                                 }}
                                 className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300"
@@ -517,7 +517,7 @@ export const LabWorkspacePage: React.FC = () => {
 
             {activeRightTab !== 'terminal' && (
               <button
-                onClick={() => window.open(`/proxy/${session.id}/${currentPreviewPort}/?token=${encodeURIComponent(getToken() || '')}`, '_blank')}
+                onClick={() => window.open(`/api/v1/proxy/${session.id}/${currentPreviewPort}/?token=${encodeURIComponent(getToken() || '')}`, '_blank')}
                 className="text-slate-400 hover:text-cyan-400 text-[11px] flex items-center space-x-1"
                 title="Open port in new tab"
               >

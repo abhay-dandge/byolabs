@@ -642,7 +642,7 @@
     "defaultIdleTimeoutMinutes": 30,
     "requireAdminApproval": true,
     "defaultMonthlyQuotaHours": 30,
-    "estimatedHourlyCostInRupees": 25
+    "estimatedHourlyCostInRupees": 3.5
   },
   "resetTokens": {},
   "passwordResets": []

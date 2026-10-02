@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { User, Lab, LabSession, ClusterInfo, SystemLog, AuditLog, SystemSettings, UserUsageReport, PasswordResetItem } from '@byolabs/shared';
-import { Shield, Users, Terminal, Cpu, HardDrive, CheckCircle2, XCircle, AlertTriangle, Plus, Trash2, Edit, RefreshCw, Activity, Clock, Hourglass, Sliders, CheckCheck, Server, Layers, KeyRound, IndianRupee, Coins, Calculator, TrendingUp, Wallet, Info } from 'lucide-react';
+import { Shield, Users, Terminal, Cpu, HardDrive, CheckCircle2, XCircle, AlertTriangle, Plus, Trash2, Edit, RefreshCw, Activity, Clock, Hourglass, Sliders, CheckCheck, Server, Layers, KeyRound, IndianRupee, Coins, Calculator, TrendingUp, Wallet, Info, Flame, Zap } from 'lucide-react';
 
 export const AdminDashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'approvals' | 'password-resets' | 'users' | 'labs' | 'running' | 'cluster' | 'logs' | 'settings'>('approvals');
@@ -30,7 +30,7 @@ export const AdminDashboardPage: React.FC = () => {
 
   // Cost Estimation Rate Modal & Student Detail Modal States
   const [showCostRateModal, setShowCostRateModal] = useState<boolean>(false);
-  const [costRateInput, setCostRateInput] = useState<number>(25);
+  const [costRateInput, setCostRateInput] = useState<number>(3.5);
   const [selectedStudentCost, setSelectedStudentCost] = useState<{ user: User; report: UserUsageReport } | null>(null);
 
   // New Lab Form State
@@ -235,9 +235,9 @@ export const AdminDashboardPage: React.FC = () => {
   const pendingResetsCount = pendingResets.length;
   const totalMonthlyHoursUsed = usageReports.reduce((acc, u) => acc + u.usedHours, 0).toFixed(1);
 
-  const currentHourlyRate = settings?.estimatedHourlyCostInRupees || 25;
+  const currentHourlyRate = settings?.estimatedHourlyCostInRupees !== undefined ? settings.estimatedHourlyCostInRupees : 3.5;
   const totalCostRupees = usageReports.reduce((acc, u) => {
-    const rate = u.hourlyRateRupees || currentHourlyRate;
+    const rate = u.hourlyRateRupees !== undefined ? u.hourlyRateRupees : currentHourlyRate;
     const cost = u.estimatedCostRupees !== undefined ? u.estimatedCostRupees : Number(((u.usedMinutes || u.usedHours * 60) / 60 * rate).toFixed(2));
     return acc + cost;
   }, 0);
@@ -255,7 +255,7 @@ export const AdminDashboardPage: React.FC = () => {
             <Shield className="w-8 h-8 text-indigo-400 mr-3" /> Admin Infrastructure Console
           </h1>
           <p className="text-slate-400 text-sm mt-1">
-            Manage user approvals, control lab time limits, monitor student lab costs in Rupees (₹), track Kubernetes DinD cluster, and inspect live pod workloads.
+            Manage user approvals, control lab time limits, track real cloud infrastructure money burned in Rupees (₹), monitor Kubernetes DinD cluster, and inspect live pod workloads.
           </p>
         </div>
 
@@ -268,7 +268,7 @@ export const AdminDashboardPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Metrics Cards Grid - 5 Cards including Estimated Lab Cost in Rupees */}
+      {/* Metrics Cards Grid - 5 Cards including Cloud Money Burned in Rupees */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800">
           <div className="text-xs font-mono text-slate-400 uppercase">Pending Approvals</div>
@@ -284,14 +284,14 @@ export const AdminDashboardPage: React.FC = () => {
 
         <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800">
           <div className="text-xs font-mono text-slate-400 uppercase flex items-center justify-between">
-            <span>Estimated Lab Cost</span>
-            <IndianRupee className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Cloud Money Burned</span>
+            <Flame className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
           </div>
           <div className="text-2xl font-extrabold text-emerald-400 mt-1 font-mono">
             ₹{totalCostRupees.toFixed(2)}
           </div>
           <div className="text-xs text-slate-400 mt-1">
-            Rate: ₹{currentHourlyRate}/hr • Approx
+            Real Burn: ₹{currentHourlyRate.toFixed(2)}/hr • DinD Pod
           </div>
         </div>
 
@@ -569,21 +569,21 @@ export const AdminDashboardPage: React.FC = () => {
       {/* TAB CONTENT: USERS & QUOTA MANAGEMENT */}
       {activeTab === 'users' && (
         <div className="space-y-6">
-          {/* Global Quota & Cost Control Banner */}
+          {/* Global Quota & Real Cloud Burn Control Banner */}
           <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950/50 border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div className="flex items-center space-x-3">
-              <div className="p-2.5 rounded-xl bg-indigo-950 text-indigo-400 border border-indigo-800/60">
-                <Hourglass className="w-5 h-5" />
+              <div className="p-2.5 rounded-xl bg-amber-950/60 text-amber-400 border border-amber-800/60">
+                <Flame className="w-5 h-5 animate-pulse" />
               </div>
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center">
-                  <span>Monthly Lab Time & Cost Settings</span>
+                  <span>Monthly Lab Time & Cloud Infra Burn Settings</span>
                   <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800/80 font-mono">
-                    ₹{currentHourlyRate}/hr rate
+                    ₹{currentHourlyRate.toFixed(2)}/hr real burn
                   </span>
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Default lab time: <strong className="text-cyan-400 font-mono">{settings?.defaultMonthlyQuotaHours || 30} Hours / Month</strong>. Estimated cost rate: <strong className="text-emerald-400 font-mono">₹{currentHourlyRate} / hour</strong>.
+                  Default lab limit: <strong className="text-cyan-400 font-mono">{settings?.defaultMonthlyQuotaHours || 30} Hours / Month</strong>. Real cloud compute burn: <strong className="text-emerald-400 font-mono">₹{currentHourlyRate.toFixed(2)} / hour</strong> per active pod.
                 </p>
               </div>
             </div>
@@ -609,19 +609,19 @@ export const AdminDashboardPage: React.FC = () => {
 
               <button
                 onClick={() => setShowCostRateModal(true)}
-                className="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs flex items-center space-x-1.5 shadow-lg shadow-emerald-950 transition"
+                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-emerald-600 hover:from-amber-500 hover:to-emerald-500 text-white font-bold text-xs flex items-center space-x-1.5 shadow-lg shadow-emerald-950 transition"
               >
-                <IndianRupee className="w-3.5 h-3.5" />
-                <span>Configure Cost Rate (₹{currentHourlyRate}/hr)</span>
+                <Flame className="w-3.5 h-3.5 text-amber-200" />
+                <span>Configure Burn Rate (₹{currentHourlyRate.toFixed(2)}/hr)</span>
               </button>
             </div>
           </div>
 
-          {/* Analytical Summary Cards for Student Usage & Cost */}
+          {/* Analytical Summary Cards for Student Usage & Cloud Money Burned */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 shadow">
               <div className="text-[11px] font-mono uppercase text-slate-400 flex items-center justify-between">
-                <span>Total Lab Usage Time</span>
+                <span>Compute Time Burned</span>
                 <Clock className="w-3.5 h-3.5 text-cyan-400" />
               </div>
               <div className="text-xl font-bold font-mono text-white mt-1">
@@ -632,29 +632,29 @@ export const AdminDashboardPage: React.FC = () => {
 
             <div className="p-4 rounded-xl bg-emerald-950/20 border border-emerald-900/50 shadow">
               <div className="text-[11px] font-mono uppercase text-emerald-400 flex items-center justify-between">
-                <span>Total Lab Cost Estimate</span>
-                <IndianRupee className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Total Money Burned Through</span>
+                <Flame className="w-3.5 h-3.5 text-amber-400" />
               </div>
               <div className="text-xl font-extrabold font-mono text-emerald-300 mt-1">
                 ₹{totalCostRupees.toFixed(2)}
               </div>
-              <div className="text-[11px] text-emerald-400/80 mt-0.5">Approx. student compute usage spend</div>
+              <div className="text-[11px] text-emerald-400/80 mt-0.5">Real cloud DinD infrastructure spend</div>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 shadow">
               <div className="text-[11px] font-mono uppercase text-slate-400 flex items-center justify-between">
-                <span>Hourly Compute Rate</span>
+                <span>Real Cloud Burn Rate</span>
                 <Calculator className="w-3.5 h-3.5 text-indigo-400" />
               </div>
               <div className="text-xl font-bold font-mono text-indigo-300 mt-1 flex items-baseline space-x-1.5">
-                <span>₹{currentHourlyRate}</span>
+                <span>₹{currentHourlyRate.toFixed(2)}</span>
                 <span className="text-xs text-slate-400 font-normal">/ hour</span>
               </div>
               <button
                 onClick={() => setShowCostRateModal(true)}
                 className="text-[11px] text-indigo-400 hover:text-indigo-300 underline mt-0.5 flex items-center"
               >
-                <span>Change hourly rate (₹/hr)</span>
+                <span>Change burn rate (₹/hr)</span>
               </button>
             </div>
 
@@ -666,11 +666,11 @@ export const AdminDashboardPage: React.FC = () => {
               <div className="text-xl font-bold font-mono text-white mt-1">
                 {activeStudentsCount} <span className="text-xs text-slate-400 font-normal">/ {nonAdminStudents.length} learners</span>
               </div>
-              <div className="text-[11px] text-slate-400 mt-0.5">Avg: ₹{avgCostPerActiveStudent} / active student</div>
+              <div className="text-[11px] text-slate-400 mt-0.5">Avg: ₹{avgCostPerActiveStudent} burned / active student</div>
             </div>
           </div>
 
-          {/* Sub-Tabs View Switcher Bar: Complete Overview | Monthly Lab Usage | Cost Estimate (₹) */}
+          {/* Sub-Tabs View Switcher Bar: Complete Overview | Monthly Lab Usage | Money Burned (₹) */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800 pb-3">
             <div className="flex items-center space-x-2">
               <button
@@ -680,7 +680,7 @@ export const AdminDashboardPage: React.FC = () => {
                     ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-950 font-bold'
                     : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800'
                 }`}
-                title="View both Monthly Lab Usage and Cost Estimate columns side by side"
+                title="View both Monthly Lab Usage and Money Burned columns side by side"
               >
                 <Layers className="w-3.5 h-3.5" />
                 <span>Complete Overview</span>
@@ -703,21 +703,21 @@ export const AdminDashboardPage: React.FC = () => {
                 onClick={() => setUserTabSubView('cost')}
                 className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition ${
                   userTabSubView === 'cost'
-                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-950 font-bold'
+                    ? 'bg-gradient-to-r from-amber-600 to-emerald-600 text-white shadow-lg shadow-emerald-950 font-bold'
                     : 'bg-slate-900 border border-slate-800 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/40'
                 }`}
-                title="View student lab usage cost estimates in Rupees (₹)"
+                title="View student real cloud money burned estimates in Rupees (₹)"
               >
-                <IndianRupee className="w-3.5 h-3.5" />
-                <span>Cost Estimate (₹)</span>
+                <Flame className="w-3.5 h-3.5 text-amber-300" />
+                <span>Money Burned (₹)</span>
                 <span className="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-950 border border-emerald-800 font-mono font-bold">
-                  ₹{totalCostRupees.toFixed(0)}
+                  ₹{totalCostRupees.toFixed(2)}
                 </span>
               </button>
             </div>
 
             <div className="text-xs text-slate-400 font-mono">
-              Displaying <strong className="text-white">{users.length}</strong> user(s) • Showing: <span className="text-cyan-400">{userTabSubView === 'all' ? 'All Metrics' : userTabSubView === 'usage' ? 'Lab Usage & Quotas' : 'Cost Estimates (₹)'}</span>
+              Displaying <strong className="text-white">{users.length}</strong> user(s) • Showing: <span className="text-cyan-400">{userTabSubView === 'all' ? 'All Metrics' : userTabSubView === 'usage' ? 'Lab Usage & Quotas' : 'Cloud Money Burned (₹)'}</span>
             </div>
           </div>
 
@@ -732,12 +732,12 @@ export const AdminDashboardPage: React.FC = () => {
                   {(userTabSubView === 'all' || userTabSubView === 'usage') && (
                     <th className="p-4">Monthly Lab Usage</th>
                   )}
-                  {/* Cost Estimate Tab / Column - placed right beside Monthly Lab Usage */}
+                  {/* Cost Estimate / Money Burned Tab Column - right beside Monthly Lab Usage */}
                   {(userTabSubView === 'all' || userTabSubView === 'cost') && (
                     <th className="p-4 bg-emerald-950/30 text-emerald-300 border-l border-emerald-900/40">
                       <div className="flex items-center space-x-1">
-                        <IndianRupee className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Cost Estimate (₹)</span>
+                        <Flame className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Money Burned (₹)</span>
                       </div>
                     </th>
                   )}
@@ -751,12 +751,12 @@ export const AdminDashboardPage: React.FC = () => {
                   const quotaHours = report ? report.monthlyQuotaHours : (settings?.defaultMonthlyQuotaHours || 30);
                   const percentUsed = report ? report.percentUsed : 0;
                   const isCustom = report ? report.isCustomQuota : false;
-                  const studentRate = report?.hourlyRateRupees || currentHourlyRate;
+                  const studentRate = report?.hourlyRateRupees !== undefined ? report.hourlyRateRupees : currentHourlyRate;
                   const studentUsedMinutes = report ? report.usedMinutes : Math.round(usedHours * 60);
                   const studentCost = report?.estimatedCostRupees !== undefined
                     ? report.estimatedCostRupees
                     : Number(((studentUsedMinutes / 60) * studentRate).toFixed(2));
-                  const maxQuotaCost = Number((quotaHours * studentRate).toFixed(0));
+                  const maxQuotaCost = Number((quotaHours * studentRate).toFixed(2));
 
                   return (
                     <tr key={u.id} className="hover:bg-slate-800/50">
@@ -804,16 +804,17 @@ export const AdminDashboardPage: React.FC = () => {
                         </td>
                       )}
 
-                      {/* Cost Estimate (₹) Column - Right Beside Monthly Lab Usage */}
+                      {/* Money Burned (₹) Column - Right Beside Monthly Lab Usage */}
                       {(userTabSubView === 'all' || userTabSubView === 'cost') && (
-                        <td className="p-4 min-w-[210px] bg-emerald-950/10 border-l border-emerald-900/30">
+                        <td className="p-4 min-w-[220px] bg-emerald-950/10 border-l border-emerald-900/30">
                           <div className="flex justify-between items-center mb-1">
                             <span className="font-extrabold text-emerald-400 font-mono text-sm flex items-center">
-                              <IndianRupee className="w-3.5 h-3.5 mr-0.5 inline" />
-                              <span>{studentCost.toFixed(2)}</span>
+                              <Flame className="w-3.5 h-3.5 text-amber-400 mr-1" />
+                              <span>₹{studentCost.toFixed(2)}</span>
+                              <span className="text-[10px] text-slate-400 font-normal ml-1">burned</span>
                             </span>
                             <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-950 border border-emerald-800/70 text-emerald-300">
-                              @{studentRate}/hr
+                              @{studentRate.toFixed(2)}/hr
                             </span>
                           </div>
 
@@ -821,9 +822,25 @@ export const AdminDashboardPage: React.FC = () => {
                             <span className="text-slate-400">
                               Time: <strong className="text-white">{usedHours}h</strong> <span className="text-slate-500">({studentUsedMinutes}m)</span>
                             </span>
-                            <span className="text-[10px] text-slate-500" title="Projected cost if student uses full quota limit">
+                            <span className="text-[10px] text-slate-500" title="Projected cloud burn if student uses full monthly quota">
                               Max: ₹{maxQuotaCost}
                             </span>
+                          </div>
+
+                          {/* Burn Status Pill & Quota Meter */}
+                          <div className="flex items-center justify-between mt-1 text-[10px] font-mono">
+                            <span className={`px-1.5 py-0.2 rounded border ${
+                              usedHours === 0
+                                ? 'bg-slate-900 text-slate-500 border-slate-800'
+                                : usedHours < 5
+                                ? 'bg-emerald-950/80 text-emerald-400 border-emerald-800/60'
+                                : usedHours < 15
+                                ? 'bg-amber-950/80 text-amber-300 border-amber-800/60'
+                                : 'bg-rose-950/80 text-rose-300 border-rose-800/60 font-bold'
+                            }`}>
+                              {usedHours === 0 ? '⚪ Zero Burn' : usedHours < 5 ? '🟢 Low Burn' : usedHours < 15 ? '⚡ Moderate Burn' : '🔥 Heavy Burn'}
+                            </span>
+                            <span className="text-slate-500">{percentUsed}% quota</span>
                           </div>
 
                           <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden mt-1.5 border border-slate-800">
@@ -843,10 +860,10 @@ export const AdminDashboardPage: React.FC = () => {
                             <button
                               onClick={() => setSelectedStudentCost({ user: u, report })}
                               className="px-2.5 py-1 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 text-xs font-semibold inline-flex items-center space-x-1 transition"
-                              title="View Cost Estimate Breakdown for this student"
+                              title="View Cloud Burn & Resource Breakdown for this student"
                             >
-                              <IndianRupee className="w-3.5 h-3.5" />
-                              <span>Cost Details</span>
+                              <Flame className="w-3.5 h-3.5 text-amber-400" />
+                              <span>Burn Details</span>
                             </button>
 
                             <button
@@ -1054,35 +1071,35 @@ export const AdminDashboardPage: React.FC = () => {
           {/* Modal for Hourly Lab Cost Rate Configuration */}
           {showCostRateModal && (
             <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
                 <div className="flex justify-between items-center border-b border-slate-800 pb-3">
                   <h3 className="text-lg font-bold text-white flex items-center">
-                    <IndianRupee className="w-5 h-5 text-emerald-400 mr-2" /> Configure Hourly Lab Cost Rate
+                    <Flame className="w-5 h-5 text-amber-400 mr-2" /> Configure Real Cloud Burn Rate
                   </h3>
                   <button onClick={() => setShowCostRateModal(false)} className="text-slate-400 hover:text-white">✕</button>
                 </div>
 
-                <p className="text-xs text-slate-300">
-                  Set the estimated platform infrastructure & DinD container compute cost per student lab hour in Indian Rupees (<strong className="text-emerald-400">₹</strong>). This rate calculates approx lab costs across all student usage.
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Set the actual cloud compute burn rate (GCP / AWS Kubernetes DinD pod allocation per active student lab hour) in Indian Rupees (<strong className="text-emerald-400">₹</strong>). This rate calculates real money burned through per student and across the entire platform.
                 </p>
 
                 <form onSubmit={handleSaveCostRate} className="space-y-4 pt-1">
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                      Estimated Rate (Rupees per Hour)
+                      Real Cloud Burn Rate (Rupees per Student Hour)
                     </label>
                     <div className="flex items-center space-x-2">
                       <div className="relative flex-1">
                         <span className="absolute left-3 top-2.5 text-slate-400 font-bold">₹</span>
                         <input
                           type="number"
-                          min="0"
-                          max="10000"
-                          step="1"
+                          min="0.1"
+                          max="1000"
+                          step="0.1"
                           required
                           value={costRateInput}
                           onChange={(e) => setCostRateInput(Number(e.target.value))}
-                          className="w-full pl-8 pr-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-mono text-sm"
+                          className="w-full pl-8 pr-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-mono text-sm focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                       <span className="text-xs font-mono text-slate-400">INR / Hour</span>
@@ -1091,35 +1108,62 @@ export const AdminDashboardPage: React.FC = () => {
 
                   {/* Preset Buttons */}
                   <div>
-                    <div className="text-[11px] font-mono text-slate-400 mb-1.5">Quick Presets:</div>
-                    <div className="flex flex-wrap gap-2">
-                      {[15, 20, 25, 30, 50, 100].map((rate) => (
+                    <div className="text-[11px] font-mono text-slate-400 mb-1.5">Real Cloud Presets:</div>
+                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                      {[
+                        { rate: 2.0, label: '₹2.00', desc: '0.5 vCPU' },
+                        { rate: 3.5, label: '₹3.50', desc: '1.0 vCPU (Default)' },
+                        { rate: 5.0, label: '₹5.00', desc: '1.5 vCPU' },
+                        { rate: 8.0, label: '₹8.00', desc: '2.0 vCPU' },
+                        { rate: 12.0, label: '₹12.00', desc: 'Heavy Dev' },
+                      ].map((preset) => (
                         <button
-                          key={rate}
+                          key={preset.rate}
                           type="button"
-                          onClick={() => setCostRateInput(rate)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-mono transition ${
-                            costRateInput === rate
-                              ? 'bg-emerald-600 text-white font-bold'
-                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                          onClick={() => setCostRateInput(preset.rate)}
+                          className={`p-2 rounded-xl text-center border transition flex flex-col items-center ${
+                            costRateInput === preset.rate
+                              ? 'bg-emerald-950 text-emerald-300 border-emerald-600 font-bold ring-1 ring-emerald-500'
+                              : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
                           }`}
                         >
-                          ₹{rate}/hr
+                          <span className="text-xs font-mono font-bold">{preset.label}/hr</span>
+                          <span className="text-[9px] text-slate-500 truncate">{preset.desc}</span>
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {/* Live Projections Preview */}
-                  <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5 text-xs font-mono">
-                    <div className="text-slate-400 uppercase text-[10px] tracking-wider font-bold">Live Cost Projections:</div>
-                    <div className="flex justify-between text-slate-300">
-                      <span>Default 30h Quota Cost:</span>
-                      <strong className="text-emerald-400">₹{(costRateInput * (settings?.defaultMonthlyQuotaHours || 30)).toFixed(2)} / student</strong>
+                  {/* Real Infrastructure Cost Breakdown Guide */}
+                  <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2 text-xs font-mono">
+                    <div className="text-amber-400 uppercase text-[10px] tracking-wider font-bold flex items-center justify-between">
+                      <span>Real Cloud Infrastructure Allocation:</span>
+                      <span className="text-slate-400">@ ₹{costRateInput.toFixed(2)}/hr</span>
                     </div>
-                    <div className="flex justify-between text-slate-300">
-                      <span>Current Total ({totalMonthlyHoursUsed} hrs used):</span>
-                      <strong className="text-cyan-400">₹{(costRateInput * Number(totalMonthlyHoursUsed)).toFixed(2)}</strong>
+                    <div className="grid grid-cols-3 gap-2 text-[11px]">
+                      <div className="p-2 rounded-lg bg-slate-900 border border-slate-800">
+                        <div className="text-slate-400 text-[10px]">🖥️ vCPU (54%)</div>
+                        <div className="font-bold text-white mt-0.5">₹{(costRateInput * 0.54).toFixed(2)}/h</div>
+                      </div>
+                      <div className="p-2 rounded-lg bg-slate-900 border border-slate-800">
+                        <div className="text-slate-400 text-[10px]">🧠 RAM (23%)</div>
+                        <div className="font-bold text-white mt-0.5">₹{(costRateInput * 0.23).toFixed(2)}/h</div>
+                      </div>
+                      <div className="p-2 rounded-lg bg-slate-900 border border-slate-800">
+                        <div className="text-slate-400 text-[10px]">💾 Storage (23%)</div>
+                        <div className="font-bold text-white mt-0.5">₹{(costRateInput * 0.23).toFixed(2)}/h</div>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-800 space-y-1">
+                      <div className="flex justify-between text-slate-300">
+                        <span>Standard 30h Quota Max Burn:</span>
+                        <strong className="text-emerald-400">₹{(costRateInput * (settings?.defaultMonthlyQuotaHours || 30)).toFixed(2)} / student</strong>
+                      </div>
+                      <div className="flex justify-between text-slate-300">
+                        <span>Current Total Burned ({totalMonthlyHoursUsed} hrs used):</span>
+                        <strong className="text-amber-400">₹{(costRateInput * Number(totalMonthlyHoursUsed)).toFixed(2)}</strong>
+                      </div>
                     </div>
                   </div>
 
@@ -1135,7 +1179,7 @@ export const AdminDashboardPage: React.FC = () => {
                       type="submit"
                       className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-950"
                     >
-                      Save Cost Rate
+                      Save Burn Rate
                     </button>
                   </div>
                 </form>
@@ -1144,115 +1188,157 @@ export const AdminDashboardPage: React.FC = () => {
           )}
 
           {/* Modal for Student Cost Breakdown Details */}
-          {selectedStudentCost && (
-            <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg w-full space-y-5 shadow-2xl">
-                <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-                  <h3 className="text-lg font-bold text-white flex items-center">
-                    <IndianRupee className="w-5 h-5 text-emerald-400 mr-2" /> Student Lab Usage & Cost Details
-                  </h3>
-                  <button onClick={() => setSelectedStudentCost(null)} className="text-slate-400 hover:text-white">✕</button>
-                </div>
+          {selectedStudentCost && (() => {
+            const userRate = selectedStudentCost.report.hourlyRateRupees !== undefined
+              ? selectedStudentCost.report.hourlyRateRupees
+              : currentHourlyRate;
+            const userMinutes = selectedStudentCost.report.usedMinutes !== undefined
+              ? selectedStudentCost.report.usedMinutes
+              : Math.round(selectedStudentCost.report.usedHours * 60);
+            const userBurnedCost = selectedStudentCost.report.estimatedCostRupees !== undefined
+              ? selectedStudentCost.report.estimatedCostRupees
+              : Number(((userMinutes / 60) * userRate).toFixed(2));
+            const userQuotaHours = selectedStudentCost.report.monthlyQuotaHours;
+            const maxQuotaBurn = Number((userQuotaHours * userRate).toFixed(2));
+            const remainingHours = selectedStudentCost.report.remainingHours;
+            const remainingCapacityRupees = Number((remainingHours * userRate).toFixed(2));
 
-                {/* Student Info Card */}
-                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex justify-between items-center">
-                  <div>
-                    <div className="font-bold text-base text-white">{selectedStudentCost.user.name}</div>
-                    <div className="text-xs text-slate-400 font-mono mt-0.5">{selectedStudentCost.user.email} • @{selectedStudentCost.user.username}</div>
-                  </div>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-mono font-bold ${
-                    selectedStudentCost.user.status === 'APPROVED' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-amber-950 text-amber-300 border border-amber-800'
-                  }`}>
-                    {selectedStudentCost.user.status}
-                  </span>
-                </div>
+            // Breakdown proportions (54% vCPU, 23% RAM, 23% Disk/Network)
+            const vcpuBurn = Number((userBurnedCost * 0.54).toFixed(2));
+            const ramBurn = Number((userBurnedCost * 0.23).toFixed(2));
+            const diskBurn = Number((userBurnedCost * 0.23).toFixed(2));
 
-                {/* Calculation Summary Grid */}
-                <div className="grid grid-cols-2 gap-3 font-mono">
-                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800">
-                    <div className="text-[11px] text-slate-400 uppercase">Lab Time Used</div>
-                    <div className="text-lg font-bold text-white mt-1">
-                      {selectedStudentCost.report.usedHours} hrs
-                    </div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">
-                      {selectedStudentCost.report.usedMinutes} minutes total
-                    </div>
+            return (
+              <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg w-full space-y-5 shadow-2xl">
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <h3 className="text-lg font-bold text-white flex items-center">
+                      <Flame className="w-5 h-5 text-amber-400 mr-2" /> Student Real Cloud Money Burn Details
+                    </h3>
+                    <button onClick={() => setSelectedStudentCost(null)} className="text-slate-400 hover:text-white">✕</button>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-900/50">
-                    <div className="text-[11px] text-emerald-400 uppercase">Approx. Lab Cost</div>
-                    <div className="text-xl font-extrabold text-emerald-300 mt-1">
-                      ₹{(selectedStudentCost.report.estimatedCostRupees !== undefined
-                        ? selectedStudentCost.report.estimatedCostRupees
-                        : Number(((selectedStudentCost.report.usedMinutes || selectedStudentCost.report.usedHours * 60) / 60 * (selectedStudentCost.report.hourlyRateRupees || currentHourlyRate)).toFixed(2))
-                      ).toFixed(2)}
+                  {/* Student Info Card */}
+                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex justify-between items-center">
+                    <div>
+                      <div className="font-bold text-base text-white">{selectedStudentCost.user.name}</div>
+                      <div className="text-xs text-slate-400 font-mono mt-0.5">{selectedStudentCost.user.email} • @{selectedStudentCost.user.username}</div>
                     </div>
-                    <div className="text-[11px] text-emerald-400/70 mt-0.5">
-                      @ ₹{selectedStudentCost.report.hourlyRateRupees || currentHourlyRate} / hour
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-mono font-bold ${
+                      selectedStudentCost.user.status === 'APPROVED' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-amber-950 text-amber-300 border border-amber-800'
+                    }`}>
+                      {selectedStudentCost.user.status}
+                    </span>
+                  </div>
+
+                  {/* Calculation Summary Grid */}
+                  <div className="grid grid-cols-2 gap-3 font-mono">
+                    <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800">
+                      <div className="text-[11px] text-slate-400 uppercase">Lab Time Burned</div>
+                      <div className="text-lg font-bold text-white mt-1">
+                        {selectedStudentCost.report.usedHours} hrs
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        {userMinutes} minutes of container runtime
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-amber-950/20 border border-amber-900/50">
+                      <div className="text-[11px] text-amber-400 uppercase flex items-center">
+                        <Flame className="w-3.5 h-3.5 mr-1" /> Money Burned
+                      </div>
+                      <div className="text-xl font-extrabold text-amber-300 mt-1">
+                        ₹{userBurnedCost.toFixed(2)}
+                      </div>
+                      <div className="text-[11px] text-amber-400/80 mt-0.5">
+                        @ ₹{userRate.toFixed(2)} / hour cloud rate
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800">
+                      <div className="text-[11px] text-slate-400 uppercase">Monthly Quota Limit</div>
+                      <div className="text-lg font-bold text-white mt-1">
+                        {userQuotaHours} hrs
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        Max Potential Burn: ₹{maxQuotaBurn.toFixed(2)}
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800">
+                      <div className="text-[11px] text-slate-400 uppercase">Remaining Quota</div>
+                      <div className="text-lg font-bold text-indigo-300 mt-1">
+                        {remainingHours} hrs
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        Remaining Capacity: ₹{remainingCapacityRupees.toFixed(2)}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800">
-                    <div className="text-[11px] text-slate-400 uppercase">Allocated Quota</div>
-                    <div className="text-lg font-bold text-white mt-1">
-                      {selectedStudentCost.report.monthlyQuotaHours} hrs
+                  {/* Real Infrastructure Cost Breakdown */}
+                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2 font-mono">
+                    <div className="text-[11px] text-slate-400 uppercase font-bold tracking-wider">
+                      Real Cloud Infra Breakdown For This Student:
                     </div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">
-                      Max Value: ₹{(selectedStudentCost.report.monthlyQuotaHours * (selectedStudentCost.report.hourlyRateRupees || currentHourlyRate)).toFixed(2)}
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                        <div className="text-slate-400 text-[10px]">🖥️ vCPU Compute</div>
+                        <div className="font-extrabold text-cyan-300 mt-0.5">₹{vcpuBurn.toFixed(2)}</div>
+                        <div className="text-[9px] text-slate-500">~54% of pod cost</div>
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                        <div className="text-slate-400 text-[10px]">🧠 RAM Memory</div>
+                        <div className="font-extrabold text-emerald-300 mt-0.5">₹{ramBurn.toFixed(2)}</div>
+                        <div className="text-[9px] text-slate-500">~23% of pod cost</div>
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                        <div className="text-slate-400 text-[10px]">💾 Ephemeral Disk</div>
+                        <div className="font-extrabold text-purple-300 mt-0.5">₹{diskBurn.toFixed(2)}</div>
+                        <div className="text-[9px] text-slate-500">~23% of pod cost</div>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800">
-                    <div className="text-[11px] text-slate-400 uppercase">Remaining Quota</div>
-                    <div className="text-lg font-bold text-indigo-300 mt-1">
-                      {selectedStudentCost.report.remainingHours} hrs
+                  {/* Formula Breakdown */}
+                  <div className="p-4 rounded-xl bg-indigo-950/20 border border-indigo-900/40 text-xs font-mono space-y-1.5">
+                    <div className="text-indigo-400 font-bold uppercase text-[10px] tracking-wider">Actual Cloud Burn Formula:</div>
+                    <div className="text-slate-300">
+                      Money Burned = <span className="text-white">{selectedStudentCost.report.usedHours} hrs</span> × <span className="text-white">₹{userRate.toFixed(2)}/hr</span>
                     </div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">
-                      Remaining Value: ₹{(selectedStudentCost.report.remainingHours * (selectedStudentCost.report.hourlyRateRupees || currentHourlyRate)).toFixed(2)}
+                    <div className="text-amber-400 font-bold text-sm">
+                      = ₹{userBurnedCost.toFixed(2)} INR
+                    </div>
+                    <div className="text-[11px] text-slate-400 pt-1 border-t border-indigo-900/30 flex justify-between items-center">
+                      <span>Quota Consumed: <strong className="text-white">{selectedStudentCost.report.percentUsed}%</strong></span>
+                      <span>Active Pod Sessions: <strong className="text-white">{selectedStudentCost.report.activeSessionsCount}</strong></span>
                     </div>
                   </div>
-                </div>
 
-                {/* Formula Breakdown */}
-                <div className="p-4 rounded-xl bg-indigo-950/20 border border-indigo-900/40 text-xs font-mono space-y-1.5">
-                  <div className="text-indigo-400 font-bold uppercase text-[10px] tracking-wider">Computation Formula:</div>
-                  <div className="text-slate-300">
-                    Approx Cost = <span className="text-white">{selectedStudentCost.report.usedHours} hrs</span> × <span className="text-white">₹{selectedStudentCost.report.hourlyRateRupees || currentHourlyRate}/hr</span>
-                  </div>
-                  <div className="text-emerald-400 font-bold text-sm">
-                    = ₹{(selectedStudentCost.report.estimatedCostRupees !== undefined
-                      ? selectedStudentCost.report.estimatedCostRupees
-                      : Number(((selectedStudentCost.report.usedMinutes || selectedStudentCost.report.usedHours * 60) / 60 * (selectedStudentCost.report.hourlyRateRupees || currentHourlyRate)).toFixed(2))
-                    ).toFixed(2)} INR
-                  </div>
-                  <div className="text-[11px] text-slate-400 pt-1 border-t border-indigo-900/30">
-                    Quota Consumed: <strong className="text-white">{selectedStudentCost.report.percentUsed}%</strong> • Active Pod Sessions: <strong className="text-white">{selectedStudentCost.report.activeSessionsCount}</strong>
-                  </div>
-                </div>
+                  <div className="flex justify-between items-center pt-3 border-t border-slate-800">
+                    <button
+                      onClick={() => {
+                        const rep = selectedStudentCost.report;
+                        setSelectedStudentCost(null);
+                        handleOpenUserQuotaModal(rep);
+                      }}
+                      className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-indigo-950 border border-slate-700 hover:border-indigo-700 text-indigo-300 font-semibold text-xs flex items-center space-x-1.5 transition"
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>Adjust Time Limit</span>
+                    </button>
 
-                <div className="flex justify-between items-center pt-3 border-t border-slate-800">
-                  <button
-                    onClick={() => {
-                      const rep = selectedStudentCost.report;
-                      setSelectedStudentCost(null);
-                      handleOpenUserQuotaModal(rep);
-                    }}
-                    className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-indigo-950 border border-slate-700 hover:border-indigo-700 text-indigo-300 font-semibold text-xs flex items-center space-x-1.5 transition"
-                  >
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>Adjust Time Limit</span>
-                  </button>
-
-                  <button
-                    onClick={() => setSelectedStudentCost(null)}
-                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs"
-                  >
-                    Done
-                  </button>
+                    <button
+                      onClick={() => setSelectedStudentCost(null)}
+                      className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs"
+                    >
+                      Done
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
       )}
 

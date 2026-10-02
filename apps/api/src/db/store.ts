@@ -35,7 +35,7 @@ const defaultSettings: SystemSettings = {
   defaultIdleTimeoutMinutes: 30,
   defaultMonthlyQuotaHours: 30,
   requireAdminApproval: true,
-  estimatedHourlyCostInRupees: 25,
+  estimatedHourlyCostInRupees: 3.5,
 };
 
 class FileStore {
@@ -50,7 +50,7 @@ class FileStore {
       this.save();
     }
     if (this.data.settings.estimatedHourlyCostInRupees === undefined) {
-      this.data.settings.estimatedHourlyCostInRupees = 25;
+      this.data.settings.estimatedHourlyCostInRupees = 3.5;
       this.save();
     }
   }
@@ -371,7 +371,7 @@ class FileStore {
     const isExceeded = usedMinutes >= quotaMinutes;
     const activeSessionsCount = this.getActiveSessionsByUserId(userId).length;
 
-    const hourlyRateRupees = settings.estimatedHourlyCostInRupees !== undefined ? settings.estimatedHourlyCostInRupees : 25;
+    const hourlyRateRupees = settings.estimatedHourlyCostInRupees !== undefined ? settings.estimatedHourlyCostInRupees : 3.5;
     const estimatedCostRupees = Number(((usedMinutes / 60) * hourlyRateRupees).toFixed(2));
 
     return {

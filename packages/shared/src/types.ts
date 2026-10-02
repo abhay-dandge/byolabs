@@ -104,6 +104,8 @@ export interface UserUsageReport {
   percentUsed: number;
   isExceeded: boolean;
   activeSessionsCount: number;
+  estimatedCostRupees?: number;
+  hourlyRateRupees?: number;
 }
 
 export interface NodeMetrics {
@@ -170,6 +172,7 @@ export interface SystemSettings {
   defaultIdleTimeoutMinutes: number;
   defaultMonthlyQuotaHours: number;
   requireAdminApproval: boolean;
+  estimatedHourlyCostInRupees?: number;
 }
 
 export interface AuthResponse {

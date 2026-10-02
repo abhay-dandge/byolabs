@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { User, Lab, LabSession, ClusterInfo, SystemLog, AuditLog, SystemSettings, UserUsageReport, PasswordResetItem } from '@byolabs/shared';
-import { Shield, Users, Terminal, Cpu, HardDrive, CheckCircle2, XCircle, AlertTriangle, Plus, Trash2, Edit, RefreshCw, Activity, Clock, Hourglass, Sliders, CheckCheck, Server, Layers, KeyRound } from 'lucide-react';
+import { Shield, Users, Terminal, Cpu, HardDrive, CheckCircle2, XCircle, AlertTriangle, Plus, Trash2, Edit, RefreshCw, Activity, Clock, Hourglass, Sliders, CheckCheck, Server, Layers, KeyRound, IndianRupee, Coins, Calculator, TrendingUp, Wallet, Info } from 'lucide-react';
 
 export const AdminDashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'approvals' | 'password-resets' | 'users' | 'labs' | 'running' | 'cluster' | 'logs' | 'settings'>('approvals');
+
+  // Sub-view inside "All Users & Quotas": 'all' (complete overview) | 'usage' (monthly lab usage) | 'cost' (cost estimate in rupees)
+  const [userTabSubView, setUserTabSubView] = useState<'all' | 'usage' | 'cost'>('all');
 
   const [users, setUsers] = useState<User[]>([]);
   const [usageReports, setUsageReports] = useState<UserUsageReport[]>([]);
@@ -24,6 +27,11 @@ export const AdminDashboardPage: React.FC = () => {
   const [showGlobalQuotaModal, setShowGlobalQuotaModal] = useState<boolean>(false);
   const [globalQuotaValue, setGlobalQuotaValue] = useState<number>(30);
   const [applyGlobalToAll, setApplyGlobalToAll] = useState<boolean>(false);
+
+  // Cost Estimation Rate Modal & Student Detail Modal States
+  const [showCostRateModal, setShowCostRateModal] = useState<boolean>(false);
+  const [costRateInput, setCostRateInput] = useState<number>(25);
+  const [selectedStudentCost, setSelectedStudentCost] = useState<{ user: User; report: UserUsageReport } | null>(null);
 
   // New Lab Form State
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -62,6 +70,9 @@ export const AdminDashboardPage: React.FC = () => {
       setSettings(setRes.settings);
       if (setRes.settings?.defaultMonthlyQuotaHours) {
         setGlobalQuotaValue(setRes.settings.defaultMonthlyQuotaHours);
+      }
+      if (setRes.settings?.estimatedHourlyCostInRupees !== undefined) {
+        setCostRateInput(setRes.settings.estimatedHourlyCostInRupees);
       }
     } catch (err) {
       console.error('Admin data load error:', err);
@@ -205,11 +216,35 @@ export const AdminDashboardPage: React.FC = () => {
     fetchAllData();
   };
 
+  const handleSaveCostRate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await api.updateCostRate(Number(costRateInput));
+      setSettings(res.settings);
+      setUsageReports(res.usageReports);
+      setShowCostRateModal(false);
+      alert(res.message);
+    } catch (err: any) {
+      alert(err.message || 'Failed to update cost rate');
+    }
+  };
+
   const pendingUsers = users.filter((u) => u.status === 'PENDING');
   const pendingUsersCount = pendingUsers.length;
   const pendingResets = passwordResets.filter((r) => r.status === 'PENDING');
   const pendingResetsCount = pendingResets.length;
   const totalMonthlyHoursUsed = usageReports.reduce((acc, u) => acc + u.usedHours, 0).toFixed(1);
+
+  const currentHourlyRate = settings?.estimatedHourlyCostInRupees || 25;
+  const totalCostRupees = usageReports.reduce((acc, u) => {
+    const rate = u.hourlyRateRupees || currentHourlyRate;
+    const cost = u.estimatedCostRupees !== undefined ? u.estimatedCostRupees : Number(((u.usedMinutes || u.usedHours * 60) / 60 * rate).toFixed(2));
+    return acc + cost;
+  }, 0);
+  const totalUsedMinutes = usageReports.reduce((acc, u) => acc + (u.usedMinutes || Math.round(u.usedHours * 60)), 0);
+  const activeStudentsCount = usageReports.filter((u) => u.usedHours > 0 || (u.usedMinutes && u.usedMinutes > 0)).length;
+  const nonAdminStudents = users.filter((u) => u.role !== 'ADMIN');
+  const avgCostPerActiveStudent = activeStudentsCount > 0 ? (totalCostRupees / activeStudentsCount).toFixed(2) : '0.00';
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
@@ -220,7 +255,7 @@ export const AdminDashboardPage: React.FC = () => {
             <Shield className="w-8 h-8 text-indigo-400 mr-3" /> Admin Infrastructure Console
           </h1>
           <p className="text-slate-400 text-sm mt-1">
-            Manage user approvals, control lab time limits, monitor Kubernetes DinD cluster, and inspect live pod workloads.
+            Manage user approvals, control lab time limits, monitor student lab costs in Rupees (₹), track Kubernetes DinD cluster, and inspect live pod workloads.
           </p>
         </div>
 
@@ -233,8 +268,8 @@ export const AdminDashboardPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Metrics Cards Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Metrics Cards Grid - 5 Cards including Estimated Lab Cost in Rupees */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800">
           <div className="text-xs font-mono text-slate-400 uppercase">Pending Approvals</div>
           <div className="text-2xl font-extrabold text-amber-400 mt-1">{pendingUsersCount}</div>
@@ -245,6 +280,19 @@ export const AdminDashboardPage: React.FC = () => {
           <div className="text-xs font-mono text-slate-400 uppercase">Monthly Lab Hours</div>
           <div className="text-2xl font-extrabold text-cyan-400 mt-1 font-mono">{totalMonthlyHoursUsed} hrs</div>
           <div className="text-xs text-slate-400 mt-1">Default Quota: {settings?.defaultMonthlyQuotaHours || 30}h/user</div>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+          <div className="text-xs font-mono text-slate-400 uppercase flex items-center justify-between">
+            <span>Estimated Lab Cost</span>
+            <IndianRupee className="w-3.5 h-3.5 text-emerald-400" />
+          </div>
+          <div className="text-2xl font-extrabold text-emerald-400 mt-1 font-mono">
+            ₹{totalCostRupees.toFixed(2)}
+          </div>
+          <div className="text-xs text-slate-400 mt-1">
+            Rate: ₹{currentHourlyRate}/hr • Approx
+          </div>
         </div>
 
         <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800">
@@ -521,21 +569,26 @@ export const AdminDashboardPage: React.FC = () => {
       {/* TAB CONTENT: USERS & QUOTA MANAGEMENT */}
       {activeTab === 'users' && (
         <div className="space-y-6">
-          {/* Global Quota Control Banner */}
+          {/* Global Quota & Cost Control Banner */}
           <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950/50 border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div className="flex items-center space-x-3">
               <div className="p-2.5 rounded-xl bg-indigo-950 text-indigo-400 border border-indigo-800/60">
                 <Hourglass className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">Monthly Lab Time Limit Settings</h3>
+                <h3 className="text-sm font-bold text-white flex items-center">
+                  <span>Monthly Lab Time & Cost Settings</span>
+                  <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800/80 font-mono">
+                    ₹{currentHourlyRate}/hr rate
+                  </span>
+                </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Default lab time limit per user: <strong className="text-cyan-400 font-mono">{settings?.defaultMonthlyQuotaHours || 30} Hours / Month</strong>. Admin can adjust individually or globally.
+                  Default lab time: <strong className="text-cyan-400 font-mono">{settings?.defaultMonthlyQuotaHours || 30} Hours / Month</strong>. Estimated cost rate: <strong className="text-emerald-400 font-mono">₹{currentHourlyRate} / hour</strong>.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-wrap items-center gap-2.5">
               {pendingUsersCount > 0 && (
                 <button
                   onClick={handleApproveAllUsers}
@@ -548,11 +601,123 @@ export const AdminDashboardPage: React.FC = () => {
 
               <button
                 onClick={() => setShowGlobalQuotaModal(true)}
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center space-x-1.5 shadow-lg shadow-indigo-950 transition"
+                className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center space-x-1.5 shadow-lg shadow-indigo-950 transition"
               >
                 <Sliders className="w-3.5 h-3.5" />
                 <span>Configure Global Quota</span>
               </button>
+
+              <button
+                onClick={() => setShowCostRateModal(true)}
+                className="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs flex items-center space-x-1.5 shadow-lg shadow-emerald-950 transition"
+              >
+                <IndianRupee className="w-3.5 h-3.5" />
+                <span>Configure Cost Rate (₹{currentHourlyRate}/hr)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Analytical Summary Cards for Student Usage & Cost */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 shadow">
+              <div className="text-[11px] font-mono uppercase text-slate-400 flex items-center justify-between">
+                <span>Total Lab Usage Time</span>
+                <Clock className="w-3.5 h-3.5 text-cyan-400" />
+              </div>
+              <div className="text-xl font-bold font-mono text-white mt-1">
+                {totalMonthlyHoursUsed} <span className="text-xs text-slate-400 font-normal">hrs</span>
+              </div>
+              <div className="text-[11px] text-slate-400 mt-0.5">{totalUsedMinutes} minutes logged by students</div>
+            </div>
+
+            <div className="p-4 rounded-xl bg-emerald-950/20 border border-emerald-900/50 shadow">
+              <div className="text-[11px] font-mono uppercase text-emerald-400 flex items-center justify-between">
+                <span>Total Lab Cost Estimate</span>
+                <IndianRupee className="w-3.5 h-3.5 text-emerald-400" />
+              </div>
+              <div className="text-xl font-extrabold font-mono text-emerald-300 mt-1">
+                ₹{totalCostRupees.toFixed(2)}
+              </div>
+              <div className="text-[11px] text-emerald-400/80 mt-0.5">Approx. student compute usage spend</div>
+            </div>
+
+            <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 shadow">
+              <div className="text-[11px] font-mono uppercase text-slate-400 flex items-center justify-between">
+                <span>Hourly Compute Rate</span>
+                <Calculator className="w-3.5 h-3.5 text-indigo-400" />
+              </div>
+              <div className="text-xl font-bold font-mono text-indigo-300 mt-1 flex items-baseline space-x-1.5">
+                <span>₹{currentHourlyRate}</span>
+                <span className="text-xs text-slate-400 font-normal">/ hour</span>
+              </div>
+              <button
+                onClick={() => setShowCostRateModal(true)}
+                className="text-[11px] text-indigo-400 hover:text-indigo-300 underline mt-0.5 flex items-center"
+              >
+                <span>Change hourly rate (₹/hr)</span>
+              </button>
+            </div>
+
+            <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 shadow">
+              <div className="text-[11px] font-mono uppercase text-slate-400 flex items-center justify-between">
+                <span>Active Lab Students</span>
+                <Users className="w-3.5 h-3.5 text-amber-400" />
+              </div>
+              <div className="text-xl font-bold font-mono text-white mt-1">
+                {activeStudentsCount} <span className="text-xs text-slate-400 font-normal">/ {nonAdminStudents.length} learners</span>
+              </div>
+              <div className="text-[11px] text-slate-400 mt-0.5">Avg: ₹{avgCostPerActiveStudent} / active student</div>
+            </div>
+          </div>
+
+          {/* Sub-Tabs View Switcher Bar: Complete Overview | Monthly Lab Usage | Cost Estimate (₹) */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800 pb-3">
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setUserTabSubView('all')}
+                className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition ${
+                  userTabSubView === 'all'
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-950 font-bold'
+                    : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+                title="View both Monthly Lab Usage and Cost Estimate columns side by side"
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Complete Overview</span>
+              </button>
+
+              <button
+                onClick={() => setUserTabSubView('usage')}
+                className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition ${
+                  userTabSubView === 'usage'
+                    ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-950 font-bold'
+                    : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+                title="View student monthly lab time limit and quota usage bars"
+              >
+                <Hourglass className="w-3.5 h-3.5" />
+                <span>Monthly Lab Usage</span>
+              </button>
+
+              <button
+                onClick={() => setUserTabSubView('cost')}
+                className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition ${
+                  userTabSubView === 'cost'
+                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-950 font-bold'
+                    : 'bg-slate-900 border border-slate-800 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/40'
+                }`}
+                title="View student lab usage cost estimates in Rupees (₹)"
+              >
+                <IndianRupee className="w-3.5 h-3.5" />
+                <span>Cost Estimate (₹)</span>
+                <span className="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-950 border border-emerald-800 font-mono font-bold">
+                  ₹{totalCostRupees.toFixed(0)}
+                </span>
+              </button>
+            </div>
+
+            <div className="text-xs text-slate-400 font-mono">
+              Displaying <strong className="text-white">{users.length}</strong> user(s) • Showing: <span className="text-cyan-400">{userTabSubView === 'all' ? 'All Metrics' : userTabSubView === 'usage' ? 'Lab Usage & Quotas' : 'Cost Estimates (₹)'}</span>
             </div>
           </div>
 
@@ -564,7 +729,18 @@ export const AdminDashboardPage: React.FC = () => {
                   <th className="p-4">Username</th>
                   <th className="p-4">Role</th>
                   <th className="p-4">Status</th>
-                  <th className="p-4">Monthly Lab Usage</th>
+                  {(userTabSubView === 'all' || userTabSubView === 'usage') && (
+                    <th className="p-4">Monthly Lab Usage</th>
+                  )}
+                  {/* Cost Estimate Tab / Column - placed right beside Monthly Lab Usage */}
+                  {(userTabSubView === 'all' || userTabSubView === 'cost') && (
+                    <th className="p-4 bg-emerald-950/30 text-emerald-300 border-l border-emerald-900/40">
+                      <div className="flex items-center space-x-1">
+                        <IndianRupee className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Cost Estimate (₹)</span>
+                      </div>
+                    </th>
+                  )}
                   <th className="p-4 text-right">Actions</th>
                 </tr>
               </thead>
@@ -575,6 +751,12 @@ export const AdminDashboardPage: React.FC = () => {
                   const quotaHours = report ? report.monthlyQuotaHours : (settings?.defaultMonthlyQuotaHours || 30);
                   const percentUsed = report ? report.percentUsed : 0;
                   const isCustom = report ? report.isCustomQuota : false;
+                  const studentRate = report?.hourlyRateRupees || currentHourlyRate;
+                  const studentUsedMinutes = report ? report.usedMinutes : Math.round(usedHours * 60);
+                  const studentCost = report?.estimatedCostRupees !== undefined
+                    ? report.estimatedCostRupees
+                    : Number(((studentUsedMinutes / 60) * studentRate).toFixed(2));
+                  const maxQuotaCost = Number((quotaHours * studentRate).toFixed(0));
 
                   return (
                     <tr key={u.id} className="hover:bg-slate-800/50">
@@ -603,33 +785,79 @@ export const AdminDashboardPage: React.FC = () => {
                       </td>
 
                       {/* Monthly Lab Usage Progress Column */}
-                      <td className="p-4 min-w-[200px]">
-                        <div className="flex justify-between items-center text-xs font-mono mb-1">
-                          <span className="font-bold text-white">{usedHours} / {quotaHours} hrs</span>
-                          <span className={`text-[10px] px-1.5 py-0.2 rounded border ${isCustom ? 'bg-cyan-950 text-cyan-300 border-cyan-800' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
-                            {isCustom ? 'Custom' : '30h Default'}
-                          </span>
-                        </div>
-                        <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
-                          <div
-                            className={`h-full transition-all duration-300 ${
-                              percentUsed > 90 ? 'bg-rose-500' : percentUsed > 75 ? 'bg-amber-500' : 'bg-cyan-500'
-                            }`}
-                            style={{ width: `${Math.min(100, percentUsed)}%` }}
-                          ></div>
-                        </div>
-                      </td>
+                      {(userTabSubView === 'all' || userTabSubView === 'usage') && (
+                        <td className="p-4 min-w-[200px]">
+                          <div className="flex justify-between items-center text-xs font-mono mb-1">
+                            <span className="font-bold text-white">{usedHours} / {quotaHours} hrs</span>
+                            <span className={`text-[10px] px-1.5 py-0.2 rounded border ${isCustom ? 'bg-cyan-950 text-cyan-300 border-cyan-800' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
+                              {isCustom ? 'Custom' : '30h Default'}
+                            </span>
+                          </div>
+                          <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
+                            <div
+                              className={`h-full transition-all duration-300 ${
+                                percentUsed > 90 ? 'bg-rose-500' : percentUsed > 75 ? 'bg-amber-500' : 'bg-cyan-500'
+                              }`}
+                              style={{ width: `${Math.min(100, percentUsed)}%` }}
+                            ></div>
+                          </div>
+                        </td>
+                      )}
+
+                      {/* Cost Estimate (₹) Column - Right Beside Monthly Lab Usage */}
+                      {(userTabSubView === 'all' || userTabSubView === 'cost') && (
+                        <td className="p-4 min-w-[210px] bg-emerald-950/10 border-l border-emerald-900/30">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-extrabold text-emerald-400 font-mono text-sm flex items-center">
+                              <IndianRupee className="w-3.5 h-3.5 mr-0.5 inline" />
+                              <span>{studentCost.toFixed(2)}</span>
+                            </span>
+                            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-950 border border-emerald-800/70 text-emerald-300">
+                              @{studentRate}/hr
+                            </span>
+                          </div>
+
+                          <div className="text-xs text-slate-300 flex items-center justify-between font-mono">
+                            <span className="text-slate-400">
+                              Time: <strong className="text-white">{usedHours}h</strong> <span className="text-slate-500">({studentUsedMinutes}m)</span>
+                            </span>
+                            <span className="text-[10px] text-slate-500" title="Projected cost if student uses full quota limit">
+                              Max: ₹{maxQuotaCost}
+                            </span>
+                          </div>
+
+                          <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden mt-1.5 border border-slate-800">
+                            <div
+                              className={`h-full transition-all duration-300 ${
+                                percentUsed > 90 ? 'bg-rose-500' : percentUsed > 75 ? 'bg-amber-500' : 'bg-emerald-500'
+                              }`}
+                              style={{ width: `${Math.min(100, percentUsed)}%` }}
+                            ></div>
+                          </div>
+                        </td>
+                      )}
 
                       <td className="p-4 text-right space-x-2">
                         {report && (
-                          <button
-                            onClick={() => handleOpenUserQuotaModal(report)}
-                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-indigo-950 border border-slate-700 hover:border-indigo-700 text-indigo-300 text-xs font-semibold inline-flex items-center space-x-1 transition"
-                            title="Increase/Decrease User Monthly Time Limit"
-                          >
-                            <Clock className="w-3.5 h-3.5" />
-                            <span>Edit Limit</span>
-                          </button>
+                          <>
+                            <button
+                              onClick={() => setSelectedStudentCost({ user: u, report })}
+                              className="px-2.5 py-1 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 text-xs font-semibold inline-flex items-center space-x-1 transition"
+                              title="View Cost Estimate Breakdown for this student"
+                            >
+                              <IndianRupee className="w-3.5 h-3.5" />
+                              <span>Cost Details</span>
+                            </button>
+
+                            <button
+                              onClick={() => handleOpenUserQuotaModal(report)}
+                              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-indigo-950 border border-slate-700 hover:border-indigo-700 text-indigo-300 text-xs font-semibold inline-flex items-center space-x-1 transition"
+                              title="Increase/Decrease User Monthly Time Limit"
+                            >
+                              <Clock className="w-3.5 h-3.5" />
+                              <span>Edit Limit</span>
+                            </button>
+                          </>
                         )}
 
                         {u.status === 'PENDING' && (
@@ -819,6 +1047,209 @@ export const AdminDashboardPage: React.FC = () => {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          )}
+
+          {/* Modal for Hourly Lab Cost Rate Configuration */}
+          {showCostRateModal && (
+            <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+                <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+                  <h3 className="text-lg font-bold text-white flex items-center">
+                    <IndianRupee className="w-5 h-5 text-emerald-400 mr-2" /> Configure Hourly Lab Cost Rate
+                  </h3>
+                  <button onClick={() => setShowCostRateModal(false)} className="text-slate-400 hover:text-white">✕</button>
+                </div>
+
+                <p className="text-xs text-slate-300">
+                  Set the estimated platform infrastructure & DinD container compute cost per student lab hour in Indian Rupees (<strong className="text-emerald-400">₹</strong>). This rate calculates approx lab costs across all student usage.
+                </p>
+
+                <form onSubmit={handleSaveCostRate} className="space-y-4 pt-1">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                      Estimated Rate (Rupees per Hour)
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-2.5 text-slate-400 font-bold">₹</span>
+                        <input
+                          type="number"
+                          min="0"
+                          max="10000"
+                          step="1"
+                          required
+                          value={costRateInput}
+                          onChange={(e) => setCostRateInput(Number(e.target.value))}
+                          className="w-full pl-8 pr-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-mono text-sm"
+                        />
+                      </div>
+                      <span className="text-xs font-mono text-slate-400">INR / Hour</span>
+                    </div>
+                  </div>
+
+                  {/* Preset Buttons */}
+                  <div>
+                    <div className="text-[11px] font-mono text-slate-400 mb-1.5">Quick Presets:</div>
+                    <div className="flex flex-wrap gap-2">
+                      {[15, 20, 25, 30, 50, 100].map((rate) => (
+                        <button
+                          key={rate}
+                          type="button"
+                          onClick={() => setCostRateInput(rate)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-mono transition ${
+                            costRateInput === rate
+                              ? 'bg-emerald-600 text-white font-bold'
+                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                          }`}
+                        >
+                          ₹{rate}/hr
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Live Projections Preview */}
+                  <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5 text-xs font-mono">
+                    <div className="text-slate-400 uppercase text-[10px] tracking-wider font-bold">Live Cost Projections:</div>
+                    <div className="flex justify-between text-slate-300">
+                      <span>Default 30h Quota Cost:</span>
+                      <strong className="text-emerald-400">₹{(costRateInput * (settings?.defaultMonthlyQuotaHours || 30)).toFixed(2)} / student</strong>
+                    </div>
+                    <div className="flex justify-between text-slate-300">
+                      <span>Current Total ({totalMonthlyHoursUsed} hrs used):</span>
+                      <strong className="text-cyan-400">₹{(costRateInput * Number(totalMonthlyHoursUsed)).toFixed(2)}</strong>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end space-x-3 pt-3 border-t border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setShowCostRateModal(false)}
+                      className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-semibold text-xs hover:bg-slate-700"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-950"
+                    >
+                      Save Cost Rate
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Modal for Student Cost Breakdown Details */}
+          {selectedStudentCost && (
+            <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg w-full space-y-5 shadow-2xl">
+                <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+                  <h3 className="text-lg font-bold text-white flex items-center">
+                    <IndianRupee className="w-5 h-5 text-emerald-400 mr-2" /> Student Lab Usage & Cost Details
+                  </h3>
+                  <button onClick={() => setSelectedStudentCost(null)} className="text-slate-400 hover:text-white">✕</button>
+                </div>
+
+                {/* Student Info Card */}
+                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex justify-between items-center">
+                  <div>
+                    <div className="font-bold text-base text-white">{selectedStudentCost.user.name}</div>
+                    <div className="text-xs text-slate-400 font-mono mt-0.5">{selectedStudentCost.user.email} • @{selectedStudentCost.user.username}</div>
+                  </div>
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-mono font-bold ${
+                    selectedStudentCost.user.status === 'APPROVED' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-amber-950 text-amber-300 border border-amber-800'
+                  }`}>
+                    {selectedStudentCost.user.status}
+                  </span>
+                </div>
+
+                {/* Calculation Summary Grid */}
+                <div className="grid grid-cols-2 gap-3 font-mono">
+                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800">
+                    <div className="text-[11px] text-slate-400 uppercase">Lab Time Used</div>
+                    <div className="text-lg font-bold text-white mt-1">
+                      {selectedStudentCost.report.usedHours} hrs
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">
+                      {selectedStudentCost.report.usedMinutes} minutes total
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-900/50">
+                    <div className="text-[11px] text-emerald-400 uppercase">Approx. Lab Cost</div>
+                    <div className="text-xl font-extrabold text-emerald-300 mt-1">
+                      ₹{(selectedStudentCost.report.estimatedCostRupees !== undefined
+                        ? selectedStudentCost.report.estimatedCostRupees
+                        : Number(((selectedStudentCost.report.usedMinutes || selectedStudentCost.report.usedHours * 60) / 60 * (selectedStudentCost.report.hourlyRateRupees || currentHourlyRate)).toFixed(2))
+                      ).toFixed(2)}
+                    </div>
+                    <div className="text-[11px] text-emerald-400/70 mt-0.5">
+                      @ ₹{selectedStudentCost.report.hourlyRateRupees || currentHourlyRate} / hour
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800">
+                    <div className="text-[11px] text-slate-400 uppercase">Allocated Quota</div>
+                    <div className="text-lg font-bold text-white mt-1">
+                      {selectedStudentCost.report.monthlyQuotaHours} hrs
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">
+                      Max Value: ₹{(selectedStudentCost.report.monthlyQuotaHours * (selectedStudentCost.report.hourlyRateRupees || currentHourlyRate)).toFixed(2)}
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800">
+                    <div className="text-[11px] text-slate-400 uppercase">Remaining Quota</div>
+                    <div className="text-lg font-bold text-indigo-300 mt-1">
+                      {selectedStudentCost.report.remainingHours} hrs
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">
+                      Remaining Value: ₹{(selectedStudentCost.report.remainingHours * (selectedStudentCost.report.hourlyRateRupees || currentHourlyRate)).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Formula Breakdown */}
+                <div className="p-4 rounded-xl bg-indigo-950/20 border border-indigo-900/40 text-xs font-mono space-y-1.5">
+                  <div className="text-indigo-400 font-bold uppercase text-[10px] tracking-wider">Computation Formula:</div>
+                  <div className="text-slate-300">
+                    Approx Cost = <span className="text-white">{selectedStudentCost.report.usedHours} hrs</span> × <span className="text-white">₹{selectedStudentCost.report.hourlyRateRupees || currentHourlyRate}/hr</span>
+                  </div>
+                  <div className="text-emerald-400 font-bold text-sm">
+                    = ₹{(selectedStudentCost.report.estimatedCostRupees !== undefined
+                      ? selectedStudentCost.report.estimatedCostRupees
+                      : Number(((selectedStudentCost.report.usedMinutes || selectedStudentCost.report.usedHours * 60) / 60 * (selectedStudentCost.report.hourlyRateRupees || currentHourlyRate)).toFixed(2))
+                    ).toFixed(2)} INR
+                  </div>
+                  <div className="text-[11px] text-slate-400 pt-1 border-t border-indigo-900/30">
+                    Quota Consumed: <strong className="text-white">{selectedStudentCost.report.percentUsed}%</strong> • Active Pod Sessions: <strong className="text-white">{selectedStudentCost.report.activeSessionsCount}</strong>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center pt-3 border-t border-slate-800">
+                  <button
+                    onClick={() => {
+                      const rep = selectedStudentCost.report;
+                      setSelectedStudentCost(null);
+                      handleOpenUserQuotaModal(rep);
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-indigo-950 border border-slate-700 hover:border-indigo-700 text-indigo-300 font-semibold text-xs flex items-center space-x-1.5 transition"
+                  >
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>Adjust Time Limit</span>
+                  </button>
+
+                  <button
+                    onClick={() => setSelectedStudentCost(null)}
+                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs"
+                  >
+                    Done
+                  </button>
+                </div>
               </div>
             </div>
           )}

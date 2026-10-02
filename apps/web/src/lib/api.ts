@@ -97,4 +97,5 @@ export const api = {
   getAuditLogs: () => request<{ auditLogs: AuditLog[] }>('/admin/audit'),
   getSettings: () => request<{ settings: SystemSettings }>('/admin/settings'),
   updateSettings: (data: Partial<SystemSettings>) => request<{ message: string; settings: SystemSettings }>('/admin/settings', { method: 'PUT', body: JSON.stringify(data) }),
+  updateCostRate: (hourlyRateRupees: number) => request<{ message: string; settings: SystemSettings; usageReports: UserUsageReport[] }>('/admin/cost-rate', { method: 'PUT', body: JSON.stringify({ hourlyRateRupees }) }),
 };

@@ -291,6 +291,25 @@ router.put('/settings', (req: AuthenticatedRequest, res: Response) => {
   return res.json({ message: 'Settings updated', settings: db.getSettings() });
 });
 
+router.put('/cost-rate', (req: AuthenticatedRequest, res: Response) => {
+  const { hourlyRateRupees } = req.body;
+  if (typeof hourlyRateRupees !== 'number' || hourlyRateRupees < 0) {
+    return res.status(400).json({ error: 'Valid non-negative hourlyRateRupees is required' });
+  }
+  db.updateSettings({ estimatedHourlyCostInRupees: hourlyRateRupees });
+  db.addAuditLog(
+    req.user!.id,
+    req.user!.email,
+    'Update Lab Cost Rate',
+    `Updated estimated student lab cost rate to ₹${hourlyRateRupees}/hr`
+  );
+  return res.json({
+    message: `Estimated lab cost rate updated to ₹${hourlyRateRupees} / hour`,
+    settings: db.getSettings(),
+    usageReports: db.getAllUsersUsageReport(),
+  });
+});
+
 // ================= PASSWORD RESET REQUESTS (ADMIN REVIEW) ================= //
 router.get('/password-resets', (req, res) => {
   const requests = db.getPasswordResets().map((r) => ({

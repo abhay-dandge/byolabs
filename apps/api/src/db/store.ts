@@ -35,6 +35,7 @@ const defaultSettings: SystemSettings = {
   defaultIdleTimeoutMinutes: 30,
   defaultMonthlyQuotaHours: 30,
   requireAdminApproval: true,
+  estimatedHourlyCostInRupees: 25,
 };
 
 class FileStore {
@@ -48,6 +49,10 @@ class FileStore {
       this.data.settings.defaultMonthlyQuotaHours = 30;
       this.save();
     }
+    if (this.data.settings.estimatedHourlyCostInRupees === undefined) {
+      this.data.settings.estimatedHourlyCostInRupees = 25;
+      this.save();
+    }
   }
 
   private load(): DatabaseSchema {
@@ -57,6 +62,12 @@ class FileStore {
         const parsed = JSON.parse(raw);
         if (parsed.settings && parsed.settings.defaultMonthlyQuotaHours === undefined) {
           parsed.settings.defaultMonthlyQuotaHours = 30;
+        }
+        if (parsed.settings && parsed.settings.estimatedHourlyCostInRupees === undefined) {
+          parsed.settings.estimatedHourlyCostInRupees = 25;
+        }
+        if (!parsed.sessions) {
+          parsed.sessions = [];
         }
         if (!parsed.resetTokens) {
           parsed.resetTokens = {};
@@ -360,6 +371,9 @@ class FileStore {
     const isExceeded = usedMinutes >= quotaMinutes;
     const activeSessionsCount = this.getActiveSessionsByUserId(userId).length;
 
+    const hourlyRateRupees = settings.estimatedHourlyCostInRupees !== undefined ? settings.estimatedHourlyCostInRupees : 25;
+    const estimatedCostRupees = Number(((usedMinutes / 60) * hourlyRateRupees).toFixed(2));
+
     return {
       userId,
       userName: user?.name || 'Unknown',
@@ -374,6 +388,8 @@ class FileStore {
       percentUsed,
       isExceeded,
       activeSessionsCount,
+      estimatedCostRupees,
+      hourlyRateRupees,
     };
   }
 

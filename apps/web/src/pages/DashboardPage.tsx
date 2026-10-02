@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import { LabSession, Lab, UserUsageReport } from '@byolabs/shared';
-import { Terminal, Play, Square, Clock, ArrowRight, RefreshCw, CheckCircle2, Shield, Hourglass, AlertTriangle } from 'lucide-react';
+import { Terminal, Play, Square, Clock, ArrowRight, RefreshCw, CheckCircle2, Shield, Hourglass, AlertTriangle, IndianRupee } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -110,6 +110,17 @@ export const DashboardPage: React.FC = () => {
               <div className="flex justify-between items-center text-[11px] font-mono text-slate-400 mt-2">
                 <span>{usage.percentUsed}% consumed</span>
                 <span>{usage.remainingHours} hrs remaining</span>
+              </div>
+
+              {/* Estimated Lab Value in Rupees */}
+              <div className="flex justify-between items-center text-xs font-mono pt-2.5 mt-2.5 border-t border-slate-800">
+                <span className="text-slate-400 flex items-center">
+                  <IndianRupee className="w-3.5 h-3.5 text-emerald-400 mr-1" /> Approx. Lab Cost Value:
+                </span>
+                <span className="font-bold text-emerald-400 font-mono">
+                  ₹{(usage.estimatedCostRupees !== undefined ? usage.estimatedCostRupees : Number(((usage.usedMinutes || 0) / 60 * (usage.hourlyRateRupees || 25)).toFixed(2)))}
+                  <span className="text-[10px] text-slate-500 font-normal ml-1">(@ ₹{usage.hourlyRateRupees || 25}/hr)</span>
+                </span>
               </div>
             </div>
 

@@ -6,7 +6,7 @@ import { portProxyService } from '../services/portProxyService.js';
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'byolabs_super_secret_jwt_key_2026_change_in_production';
 
-// Helper to extract JWT token from query, header, or cookie
+// Helper to extract JWT token from query, header, cookie, or referer
 function extractToken(req: Request): string | null {
   if (req.query.token && typeof req.query.token === 'string') {
     return req.query.token;
@@ -22,6 +22,16 @@ function extractToken(req: Request): string | null {
     if (tokenCookie) {
       return tokenCookie.split('=')[1] || null;
     }
+  }
+  const referer = req.headers.referer;
+  if (referer) {
+    try {
+      const refUrl = new URL(referer);
+      const refToken = refUrl.searchParams.get('token');
+      if (refToken) {
+        return refToken;
+      }
+    } catch (e) {}
   }
   return null;
 }

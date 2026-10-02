@@ -204,18 +204,30 @@ export class PortProxyService {
       const queryString = queryIndex !== -1 ? incomingUrl.slice(queryIndex) : '';
       const finalPath = (subPath.startsWith('/') ? subPath : `/${subPath}`) + queryString;
 
-      // Set cookie to identify active proxy session for sub-resource routing
+      // Preserve existing Set-Cookie (e.g. byolabs_token set by auth middleware)
       const cookieVal = `${session.id}:${targetPort}`;
-      res.setHeader('Set-Cookie', [
-        `byolabs_proxy_target=${cookieVal}; Path=/; SameSite=Lax`,
-      ]);
+      const newProxyCookie = `byolabs_proxy_target=${cookieVal}; Path=/; SameSite=Lax`;
+      const existingCookies = res.getHeader('Set-Cookie');
+      let cookieArray: string[] = [];
+      if (Array.isArray(existingCookies)) {
+        cookieArray = [...existingCookies, newProxyCookie];
+      } else if (typeof existingCookies === 'string') {
+        cookieArray = [existingCookies, newProxyCookie];
+      } else {
+        cookieArray = [newProxyCookie];
+      }
+      res.setHeader('Set-Cookie', cookieArray);
 
       const headers = { ...req.headers };
+      // Request uncompressed plaintext from upstream to safely inspect and inject <base href="..."> into HTML
+      delete headers['accept-encoding'];
       headers.host = `127.0.0.1:${targetPort}`;
       headers['x-forwarded-for'] = (req.socket.remoteAddress || '') as string;
       headers['x-forwarded-proto'] = 'http';
       headers['x-forwarded-host'] = (req.headers.host || '') as string;
-      headers['x-forwarded-prefix'] = `/proxy/${session.id}/${targetPort}`;
+      headers['x-forwarded-prefix'] = (req.url && req.url.includes('/api/v1/proxy'))
+        ? `/api/v1/proxy/${session.id}/${targetPort}`
+        : `/proxy/${session.id}/${targetPort}`;
 
       const clientReq = http.request(
         {
@@ -230,7 +242,27 @@ export class PortProxyService {
           const contentType = proxyRes.headers['content-type'] || '';
           const isHtml = typeof contentType === 'string' && contentType.includes('text/html');
 
-          // If HTML response, inject <base href="..."> so relative paths work automatically
+          const newHeaders = { ...proxyRes.headers };
+          delete newHeaders['content-security-policy'];
+          delete newHeaders['x-frame-options']; // Enable iframe preview
+
+          // Rewrite Location redirect headers if target web app redirects to localhost or root path
+          if (proxyRes.headers.location) {
+            let loc = proxyRes.headers.location;
+            const prefix = (req.url && req.url.includes('/api/v1/proxy'))
+              ? `/api/v1/proxy/${session.id}/${targetPort}`
+              : `/proxy/${session.id}/${targetPort}`;
+
+            // If location is absolute URL to localhost:targetPort
+            loc = loc.replace(/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/, prefix);
+            // If location is root-relative (starts with / but doesn't include the proxy prefix)
+            if (loc.startsWith('/') && !loc.startsWith(prefix)) {
+              loc = `${prefix}${loc}`;
+            }
+            newHeaders.location = loc;
+          }
+
+          // If HTML response, inject <base href="..."> so relative paths and subresources work automatically
           if (isHtml) {
             const chunks: Buffer[] = [];
             proxyRes.on('data', (c) => chunks.push(c));
@@ -241,27 +273,19 @@ export class PortProxyService {
                 : `/proxy/${session.id}/${targetPort}/`;
               const baseTag = `<base href="${prefix}">`;
 
-              if (body.includes('<head>')) {
-                body = body.replace('<head>', `<head>${baseTag}`);
-              } else if (body.includes('<html>')) {
-                body = body.replace('<html>', `<html><head>${baseTag}</head>`);
+              if (/<head(\s[^>]*)?>/i.test(body)) {
+                body = body.replace(/<head(\s[^>]*)?>/i, `$&${baseTag}`);
+              } else if (/<html(\s[^>]*)?>/i.test(body)) {
+                body = body.replace(/<html(\s[^>]*)?>/i, `$&<head>${baseTag}</head>`);
               } else {
                 body = baseTag + body;
               }
 
-              const newHeaders = { ...proxyRes.headers };
               delete newHeaders['content-length'];
-              delete newHeaders['content-security-policy'];
-              delete newHeaders['x-frame-options']; // Enable iframe preview
-
               res.writeHead(proxyRes.statusCode || 200, newHeaders);
               res.end(body);
             });
           } else {
-            const newHeaders = { ...proxyRes.headers };
-            delete newHeaders['content-security-policy'];
-            delete newHeaders['x-frame-options'];
-
             res.writeHead(proxyRes.statusCode || 200, newHeaders);
             proxyRes.pipe(res);
           }

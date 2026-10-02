@@ -181,8 +181,10 @@ export const PortPreviewPanel: React.FC<PortPreviewPanelProps> = ({
           ref={iframeRef}
           src={proxyUrl}
           title={`Pod Port ${currentPort} Preview`}
-          className="w-full h-full border-0"
+          className="w-full h-full border-0 focus:outline-none"
+          tabIndex={0}
           onLoad={() => setIsLoading(false)}
+          allow="autoplay; fullscreen"
           sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals"
         />
       </div>

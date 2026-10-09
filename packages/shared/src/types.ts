@@ -17,6 +17,8 @@ export type LabCategory =
   | 'Linux'
   | 'Docker'
   | 'Podman'
+  | 'Containerd'
+  | 'Buildah'
   | 'Kubernetes'
   | 'Git'
   | 'Ansible'

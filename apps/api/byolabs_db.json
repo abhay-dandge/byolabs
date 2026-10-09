@@ -44,8 +44,8 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-10-02T14:44:43.296Z",
-      "updatedAt": "2026-10-02T14:44:43.296Z",
+      "createdAt": "2026-10-08T15:19:36.811Z",
+      "updatedAt": "2026-10-08T15:19:36.811Z",
       "instructionsMarkdown": "\n# Ubuntu 24.04 Playground\n\nWelcome to your isolated **Ubuntu 24.04** container environment running as a Kubernetes pod.\n\n## Prerequisites & Tools\nThis container comes pre-configured with:\n- `bash`\n- `curl`, `wget`, `git`\n- `iproute2` (`ip a`, `ip route`), `net-tools`\n- `procps` (`ps aux`, `top`)\n- `vim`, `nano`\n\n---\n\n## Guided Exercises\n\n### Step 1: Inspect System Release & Kernel\nRun the following command in the interactive terminal on the right to view your OS version:\n\n```bash\ncat /etc/os-release\nuname -a\n```\n\n### Step 2: Working Directory & Environment Variables\nCheck your current working directory and active shell environment:\n\n```bash\npwd\nwhoami\nenv | grep USER\n```\n\n### Step 3: Create a DevOps Workspace Directory\nCreate a directory named `devops` in your home directory:\n\n```bash\nmkdir -p ~/devops && cd ~/devops\npwd\n```\n\n---\n\n## Tasks Checklist\n      ",
       "tasks": [
         {
@@ -85,8 +85,8 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-10-02T14:44:43.296Z",
-      "updatedAt": "2026-10-02T14:44:43.296Z",
+      "createdAt": "2026-10-08T15:19:36.811Z",
+      "updatedAt": "2026-10-08T15:19:36.811Z",
       "instructionsMarkdown": "\n# Linux Fundamentals & File System Permissions\n\nLearn essential file ownership and permission control in Linux environments.\n\n## Quick Commands\n- `chmod 755 filename`\n- `chown user:group filename`\n- `ls -la`\n\n```bash\ntouch sample.sh\nchmod +x sample.sh\n./sample.sh\n```\n      ",
       "tasks": [
         {
@@ -115,8 +115,8 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-10-02T14:44:43.296Z",
-      "updatedAt": "2026-10-02T14:44:43.296Z",
+      "createdAt": "2026-10-08T15:19:36.811Z",
+      "updatedAt": "2026-10-08T15:19:36.811Z",
       "instructionsMarkdown": "\n# Docker Playground (Ubuntu 24.04 Engine)\n\nWelcome to your isolated **Docker Playground** running on **Ubuntu 24.04 LTS**!\n\n---\n\n## Environment Architecture\n- **Operating System**: Ubuntu 24.04 LTS\n- **Docker Engine**: Installed automatically on boot via official `curl -fsSL https://get.docker.com | sh` script\n- **Daemon**: `dockerd` running natively in background with full container creation capability\n\n---\n\n## Guided Exercises\n\n### Step 1: Verify Installed Docker Engine & Daemon\nVerify CLI communication with the Docker daemon:\n\n```bash\ndocker version\ndocker info\n```\n\n### Step 2: Test Container Lifecycle & Hello-World\nRun a lightweight `hello-world` container:\n\n```bash\ndocker run hello-world\n```\n\n### Step 3: Pull & Inspect Alpine Linux Image\nPull the official `alpine` image:\n\n```bash\ndocker pull alpine\ndocker images\n```\n\n---\n\n## Tasks Checklist\n      ",
       "tasks": [
         {
@@ -157,8 +157,8 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-10-02T14:44:43.296Z",
-      "updatedAt": "2026-10-02T14:44:43.296Z",
+      "createdAt": "2026-10-08T15:19:36.811Z",
+      "updatedAt": "2026-10-08T15:19:36.811Z",
       "instructionsMarkdown": "\n# Podman Playground (Standard GKE Cluster)\n\nWelcome to your isolated **Podman Playground** running with full rootful container capabilities on the **Standard Kubernetes Cluster**!\n\n---\n\n## What is Podman?\n**Podman** (Pod Manager) is an open-source, daemonless, OCI-compliant container engine developed by Red Hat. Unlike Docker, Podman:\n- Operates **without a background daemon** (`dockerd`) — every container is a direct child of the Podman process (managed via Conmon).\n- Provides native support for **Pods** (groups of containers sharing network and namespaces, identical to Kubernetes Pods).\n- Can generate and play Kubernetes YAML manifests directly using `podman kube generate` and `podman kube play`.\n- CLI syntax is 1:1 compatible with Docker (`alias docker=podman`).\n\n---\n\n## Guided Exercises\n\n### Step 1: Inspect Podman Engine & Host Environment\nVerify your Podman version and check the underlying OCI runtime (`crun`), storage graph driver (`overlay`), and network backend (`netavark`):\n\n```bash\npodman --version\npodman info\n```\n\n### Step 2: Pull and Manage OCI Images\nPull a lightweight Alpine Linux image from Docker Hub or Fedora registry:\n\n```bash\npodman pull alpine\npodman images\n```\n\n### Step 3: Run Interactive and Background Containers\nRun a container using Podman:\n\n```bash\n# Run a one-off Alpine container\npodman run --rm alpine uname -a\n\n# Run a named container in background\npodman run --name my-alpine -d alpine sleep 3600\npodman ps -a\n```\n\n### Step 4: Work with Podman Pods\nPodman's flagship feature is managing pods without requiring a Kubernetes cluster:\n\n```bash\n# Create a new Pod named web-pod\npodman pod create --name web-pod -p 8080:80\n\n# List pods\npodman pod ps\n\n# Run a container inside the pod\npodman run -d --pod web-pod --name web-server nginx:alpine\npodman pod inspect web-pod\n```\n\n---\n\n## Tasks Checklist\n      ",
       "tasks": [
         {
@@ -204,8 +204,8 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-10-02T14:44:43.296Z",
-      "updatedAt": "2026-10-02T14:44:43.296Z",
+      "createdAt": "2026-10-08T15:19:36.811Z",
+      "updatedAt": "2026-10-08T15:19:36.811Z",
       "instructionsMarkdown": "\n# Kubernetes Basics & Workloads\n\nLearn how Kubernetes manifests configure Pod specs and deployments.\n\n```bash\ncat << 'EOF' > pod.yaml\napiVersion: v1\nkind: Pod\nmetadata:\n  name: nginx-pod\nspec:\n  containers:\n  - name: nginx\n    image: nginx:alpine\nEOF\ncat pod.yaml\n```\n      ",
       "tasks": [
         {
@@ -233,8 +233,8 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-10-02T14:44:43.296Z",
-      "updatedAt": "2026-10-02T14:44:43.296Z",
+      "createdAt": "2026-10-08T15:19:36.811Z",
+      "updatedAt": "2026-10-08T15:19:36.811Z",
       "instructionsMarkdown": "\n# Git Branching & Version Control\n\nPractice initializing repositories and managing branches.\n\n```bash\nmkdir my-repo && cd my-repo\ngit init\ngit config user.name \"Student\"\ngit config user.email \"student@byolabs.in\"\necho \"Initial commit\" > README.md\ngit add .\ngit commit -m \"Initial commit\"\n```\n      ",
       "tasks": [
         {
@@ -263,8 +263,8 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-10-02T14:44:43.296Z",
-      "updatedAt": "2026-10-02T14:44:43.296Z",
+      "createdAt": "2026-10-08T15:19:36.811Z",
+      "updatedAt": "2026-10-08T15:19:36.811Z",
       "instructionsMarkdown": "\n# RHCSA & CLA Module 1 Gradable Tasks\n*Unnati Development and Training Center*\n\nWelcome to your Linux RHCSA & CLA Module 1 practical lab environment. Execute the commands in the terminal window to fulfill all 12 gradable task requirements.\n      ",
       "tasks": [
         {
@@ -359,8 +359,8 @@
       "terminalEnabled": true,
       "browserAccess": true,
       "isPublished": true,
-      "createdAt": "2026-10-02T14:44:43.296Z",
-      "updatedAt": "2026-10-02T14:44:43.296Z",
+      "createdAt": "2026-10-08T15:19:36.811Z",
+      "updatedAt": "2026-10-08T15:19:36.811Z",
       "instructionsMarkdown": "\n# RHCSA & CLA Module 2 Gradable Tasks\n*Unnati Development and Training Center Pvt Ltd*\n\nWelcome to your Linux RHCSA & CLA Module 2 practical lab environment. Execute the commands in the terminal window to fulfill all 14 gradable user and group administration task requirements.\n      ",
       "tasks": [
         {
@@ -446,6 +446,102 @@
           "title": "14. Create user \"devops_admin\" with custom home directory /home/devops_home",
           "description": "Create user \"devops_admin\" with home directory set to \"/home/devops_home\".",
           "validationScript": "grep -q \"devops_admin.*:/home/devops_home:\" /etc/passwd || getent passwd devops_admin 2>/dev/null | grep -q \"/home/devops_home\""
+        }
+      ]
+    },
+    {
+      "id": "lab-containerd-playground",
+      "slug": "containerd-playground",
+      "name": "Containerd & ctr Image Lifecycle Playground",
+      "description": "Hands-on Containerd runtime playground. Master the industry-standard CNCF container runtime using ctr: image distribution, namespaces, container tasks, and runtime lifecycle debugging.",
+      "category": "Containerd",
+      "difficulty": "Intermediate",
+      "durationMinutes": 60,
+      "dockerImage": "docker:dind",
+      "cpuRequest": "250m",
+      "cpuLimit": "1",
+      "memoryRequest": "512Mi",
+      "memoryLimit": "2Gi",
+      "storage": "2Gi",
+      "startupCommand": "/bin/sh",
+      "terminalEnabled": true,
+      "browserAccess": true,
+      "isPublished": true,
+      "createdAt": "2026-10-08T15:19:36.811Z",
+      "updatedAt": "2026-10-08T15:19:36.811Z",
+      "instructionsMarkdown": "\n# Containerd & ctr Lifecycle Playground\n\nWelcome to your isolated **Containerd** container environment running on the Kubernetes cluster.\n\n---\n\n## What is Containerd?\n**Containerd** is an industry-standard, core container runtime developed as a CNCF graduated project. It powers modern Docker and manages the complete container lifecycle of Kubernetes worker nodes (via CRI).\n\n### Core Concepts:\n- **Daemon**: `containerd` daemon running as a background service listening on `/run/containerd/containerd.sock`.\n- **Namespaces**: Containerd isolates images and containers within distinct namespaces (e.g. `default`, `k8s.io`, `moby`).\n- **Containers vs Tasks**: In Containerd, a *Container* holds the metadata, configuration, and image spec. A *Task* represents the actual running process executing on the host.\n\n---\n\n## Guided Exercises\n\n### Step 1: Verify Containerd Runtime & Version\nInspect the active Containerd daemon and CLI client:\n\n```bash\nctr version\nctr check\n```\n\n### Step 2: Manage Containerd Namespaces\nContainerd uses namespaces to prevent naming collisions between subsystems:\n\n```bash\n# List all active namespaces\nctr namespaces list\n# (or shorthand: ctr ns ls)\n\n# Create a custom namespace for your project\nctr namespaces create devops\nctr ns ls\n```\n\n### Step 3: Pull & Inspect OCI Images\nPull an official image from Docker Hub into Containerd:\n*(Note: ctr requires fully-qualified registry references, e.g. docker.io/library/<image>:<tag>)*\n\n```bash\n# Pull Alpine Linux into default namespace\nctr images pull docker.io/library/alpine:latest\n\n# List pulled images\nctr images list\n# (or shorthand: ctr i ls)\n```\n\n### Step 4: Run Containers & Manage Tasks\nLaunch and monitor a container task:\n\n```bash\n# 1. Run an interactive one-off command\nctr run --rm -t docker.io/library/alpine:latest test-box uname -a\n\n# 2. Run a detached background task\nctr run -d docker.io/library/alpine:latest alpine-worker sleep 3600\n\n# 3. List active containers and running tasks\nctr containers list\nctr tasks list\n```\n\n### Step 5: Stop & Remove Tasks and Containers\nStop the process and clean up the container:\n\n```bash\n# Stop/kill running task\nctr tasks kill -s SIGKILL alpine-worker\n\n# Delete task and container definition\nctr tasks rm alpine-worker\nctr containers rm alpine-worker\n```\n\n---\n\n## Tasks Checklist\n      ",
+      "tasks": [
+        {
+          "id": "task-containerd-1",
+          "title": "1. Verify Containerd Runtime (ctr version)",
+          "description": "Run `ctr version` in your terminal to verify client and daemon connectivity.",
+          "validationScript": "ctr version"
+        },
+        {
+          "id": "task-containerd-2",
+          "title": "2. Create a Containerd Namespace (\"devops\")",
+          "description": "Create a new Containerd namespace named `devops` using `ctr namespaces create devops` (or `ctr ns create devops`).",
+          "validationScript": "ctr namespaces list | grep -q \"devops\" || ctr ns ls | grep -q \"devops\""
+        },
+        {
+          "id": "task-containerd-3",
+          "title": "3. Pull Alpine Image with ctr",
+          "description": "Pull the official Alpine image using `ctr images pull docker.io/library/alpine:latest`.",
+          "validationScript": "ctr images list | grep -q \"alpine\" || ctr -n devops images list | grep -q \"alpine\""
+        },
+        {
+          "id": "task-containerd-4",
+          "title": "4. Run an Alpine Container Task (alpine-worker)",
+          "description": "Launch a container task named `alpine-worker` using `ctr run -d docker.io/library/alpine:latest alpine-worker sleep 3600`.",
+          "validationScript": "ctr containers list | grep -q \"alpine-worker\" || ctr tasks list | grep -q \"alpine-worker\" || ctr -n devops containers list | grep -q \"alpine-worker\""
+        }
+      ]
+    },
+    {
+      "id": "lab-buildah-playground",
+      "slug": "buildah-playground",
+      "name": "Buildah OCI Image Builder Playground",
+      "description": "Daemonless container image creation with Buildah. Build OCI images step-by-step from base images or scratch, manipulate container root filesystems directly, and compile Dockerfiles without running a Docker daemon.",
+      "category": "Buildah",
+      "difficulty": "Intermediate",
+      "durationMinutes": 60,
+      "dockerImage": "quay.io/buildah/stable",
+      "cpuRequest": "250m",
+      "cpuLimit": "1",
+      "memoryRequest": "512Mi",
+      "memoryLimit": "2Gi",
+      "storage": "2Gi",
+      "startupCommand": "/bin/bash",
+      "terminalEnabled": true,
+      "browserAccess": true,
+      "isPublished": true,
+      "createdAt": "2026-10-08T15:19:36.811Z",
+      "updatedAt": "2026-10-08T15:19:36.811Z",
+      "instructionsMarkdown": "\n# Buildah OCI Image Builder Playground\n\nWelcome to your isolated **Buildah Playground**! Practice daemonless, secure OCI container builds without needing a running Docker daemon.\n\n---\n\n## What is Buildah?\n**Buildah** is a command-line tool developed by Red Hat and the open-source containers community. Unlike Docker:\n- **No background daemon** (`dockerd`) is required.\n- Builds can be performed inside unprivileged containers or rootless CI/CD pipelines.\n- Supports **interactive builds**: construct container images command-by-command directly from the shell or scripting.\n- Allows direct host filesystem mounts of container root filesystems (`buildah mount`).\n- Fully compatible with Dockerfiles via `buildah bud` (Build Using Dockerfile).\n\n---\n\n## Guided Exercises\n\n### Step 1: Inspect Buildah Engine & Configuration\nVerify your Buildah version and check storage configuration:\n\n```bash\nbuildah --version\nbuildah info\n```\n\n### Step 2: Interactive Container Construction\nBuildah lets you start a container from a base image and build up layers interactively:\n\n```bash\n# 1. Create a working container from Alpine\ncontainer=$(buildah from alpine)\necho \"Working container created: $container\"\n\n# 2. Run commands inside the build container\nbuildah run $container sh -c 'echo \"Created with Buildah on BYOLabs\" > /etc/byolabs.txt'\nbuildah run $container cat /etc/byolabs.txt\n\n# 3. Configure container metadata, entrypoint, or environment variables\nbuildah config --author \"DevOps Engineer\" $container\nbuildah config --env APP_ENV=production $container\nbuildah config --entrypoint '[\"cat\", \"/etc/byolabs.txt\"]' $container\n\n# 4. Commit the container to a new OCI image\nbuildah commit $container my-custom-image:v1\n\n# 5. Clean up the working container\nbuildah rm $container\n```\n\n### Step 3: Declarative Image Builds with Dockerfile (buildah bud)\nYou can also build images using standard Dockerfiles using `buildah bud`:\n\n```bash\n# Create a sample Dockerfile\nmkdir -p ~/myapp && cd ~/myapp\ncat << 'EOF' > Dockerfile\nFROM alpine:latest\nRUN echo \"Hello from Buildah Dockerfile\" > /hello.txt\nCMD [\"cat\", \"/hello.txt\"]\nEOF\n\n# Build image tagged webapp:latest\nbuildah bud -t webapp:latest .\n\n# Verify the newly built image\nbuildah images\n```\n\n### Step 4: Direct Filesystem Mounts (buildah mount)\nOne of Buildah's most powerful features is modifying container filesystems directly on the host without starting a container process:\n\n```bash\nnew_box=$(buildah from alpine)\nmountpoint=$(buildah mount $new_box)\necho \"Mounted at: $mountpoint\"\n\n# Write directly to container filesystem via host path\necho \"Direct disk injection\" > \"$mountpoint/direct.txt\"\ncat \"$mountpoint/direct.txt\"\n\n# Unmount when done\nbuildah unmount $new_box\nbuildah rm $new_box\n```\n\n---\n\n## Tasks Checklist\n      ",
+      "tasks": [
+        {
+          "id": "task-buildah-1",
+          "title": "1. Verify Buildah Engine (buildah --version)",
+          "description": "Run `buildah --version` or `buildah info` in the terminal to inspect the Buildah runtime.",
+          "validationScript": "buildah --version || buildah info"
+        },
+        {
+          "id": "task-buildah-2",
+          "title": "2. Create a Working Container from Alpine",
+          "description": "Create a new working container using `buildah from alpine`.",
+          "validationScript": "buildah containers | grep -i \"alpine\" || [ $(buildah containers -q | wc -l) -gt 0 ]"
+        },
+        {
+          "id": "task-buildah-3",
+          "title": "3. Commit Custom Image (my-custom-image:v1)",
+          "description": "Commit your working container into a new image named `my-custom-image:v1` using `buildah commit <container> my-custom-image:v1`.",
+          "validationScript": "buildah images | grep -q \"my-custom-image\""
+        },
+        {
+          "id": "task-buildah-4",
+          "title": "4. Build Image using Dockerfile (buildah bud -t webapp:latest .)",
+          "description": "Create a Dockerfile and compile it into an image tagged `webapp:latest` using `buildah bud -t webapp:latest .`.",
+          "validationScript": "buildah images | grep -q \"webapp\""
         }
       ]
     }

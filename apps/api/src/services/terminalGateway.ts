@@ -351,9 +351,10 @@ async function connectK8sExecStream(ws: WebSocket, session: any, kc: k8s.KubeCon
   };
 
   const isDockerLab = session.labSlug?.includes('docker') || session.labId?.includes('docker');
+  const isContainerdLab = session.labSlug?.includes('containerd') || session.labId?.includes('containerd');
 
   try {
-    if (isDockerLab) {
+    if (isDockerLab || isContainerdLab) {
       await tryExecShell(['/bin/sh']);
     } else {
       await tryExecShell(['/bin/bash']);

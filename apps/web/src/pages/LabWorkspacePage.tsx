@@ -21,9 +21,9 @@ export const LabWorkspacePage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const [showCertModal, setShowCertModal] = useState(false);
-  const isDockerLab = lab?.category === 'Docker' || lab?.category === 'Podman' || lab?.slug?.includes('docker') || lab?.slug?.includes('podman') || lab?.dockerImage?.includes('docker') || lab?.dockerImage?.includes('podman');
-  const initialCountdown = isDockerLab ? 90 : 30;
-  const [startupCountdown, setStartupCountdown] = useState<number>(90);
+  const isDockerLab = lab?.category === 'Docker' || lab?.category === 'Podman' || lab?.category === 'Containerd' || lab?.category === 'Buildah' || lab?.slug?.includes('docker') || lab?.slug?.includes('podman') || lab?.slug?.includes('containerd') || lab?.slug?.includes('buildah') || lab?.dockerImage?.includes('docker') || lab?.dockerImage?.includes('podman') || lab?.dockerImage?.includes('buildah');
+  const initialCountdown = isDockerLab ? 45 : 30;
+  const [startupCountdown, setStartupCountdown] = useState<number>(45);
 
   // Port Preview States
   const [detectedPorts, setDetectedPorts] = useState<PortInfo[]>([]);
@@ -215,17 +215,17 @@ export const LabWorkspacePage: React.FC = () => {
             </div>
             {isDockerLab ? (
               <>
-                <div className={`flex items-center space-x-2 ${elapsed >= 10 ? 'text-emerald-400' : 'text-cyan-300'}`}>
-                  {elapsed >= 10 ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> : <RefreshCw className="w-4 h-4 flex-shrink-0 animate-spin" />}
-                  <span>Updating apt repositories & installing curl</span>
+                <div className={`flex items-center space-x-2 ${elapsed >= 5 ? 'text-emerald-400' : 'text-cyan-300'}`}>
+                  {elapsed >= 5 ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> : <RefreshCw className="w-4 h-4 flex-shrink-0 animate-spin" />}
+                  <span>Preparing container runtime environment</span>
                 </div>
-                <div className={`flex items-center space-x-2 ${elapsed >= 80 ? 'text-emerald-400' : elapsed >= 25 ? 'text-cyan-300' : 'text-slate-500'}`}>
-                  {elapsed >= 80 ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> : elapsed >= 25 ? <RefreshCw className="w-4 h-4 flex-shrink-0 animate-spin" /> : <Clock className="w-4 h-4 flex-shrink-0" />}
-                  <span>Running `curl -fsSL https://get.docker.com | sh`</span>
+                <div className={`flex items-center space-x-2 ${elapsed >= 15 ? 'text-emerald-400' : elapsed >= 5 ? 'text-cyan-300' : 'text-slate-500'}`}>
+                  {elapsed >= 15 ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> : elapsed >= 5 ? <RefreshCw className="w-4 h-4 flex-shrink-0 animate-spin" /> : <Clock className="w-4 h-4 flex-shrink-0" />}
+                  <span>Mounting storage volumes and isolated namespaces</span>
                 </div>
-                <div className={`flex items-center space-x-2 ${elapsed >= 110 ? 'text-emerald-400' : elapsed >= 80 ? 'text-cyan-300' : 'text-slate-500'}`}>
-                  {elapsed >= 110 ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> : elapsed >= 80 ? <RefreshCw className="w-4 h-4 flex-shrink-0 animate-spin" /> : <Clock className="w-4 h-4 flex-shrink-0" />}
-                  <span>Starting Docker daemon & launching interactive shell</span>
+                <div className={`flex items-center space-x-2 ${elapsed >= 25 ? 'text-emerald-400' : elapsed >= 15 ? 'text-cyan-300' : 'text-slate-500'}`}>
+                  {elapsed >= 25 ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> : elapsed >= 15 ? <RefreshCw className="w-4 h-4 flex-shrink-0 animate-spin" /> : <Clock className="w-4 h-4 flex-shrink-0" />}
+                  <span>Initializing interactive terminal and attaching session</span>
                 </div>
               </>
             ) : (

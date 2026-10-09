@@ -391,6 +391,9 @@ export class LabProvisionerService {
 
     const isSidecarDind = lab.category === 'Docker' || lab.slug === 'docker-playground' || lab.dockerImage === 'docker:27-cli';
     const isPodmanLab = lab.category === 'Podman' || lab.slug?.includes('podman') || (lab.dockerImage && lab.dockerImage.includes('podman'));
+    const isBuildahLab = lab.category === 'Buildah' || lab.slug?.includes('buildah') || (lab.dockerImage && lab.dockerImage.includes('buildah'));
+    const isContainerdLab = lab.category === 'Containerd' || lab.slug?.includes('containerd') || (lab.dockerImage && lab.dockerImage.includes('containerd'));
+    const isHeavyRuntime = isSidecarDind || isPodmanLab || isBuildahLab || isContainerdLab;
 
     // 2. Create ResourceQuota in namespace
     const quotaSpec: k8s.V1ResourceQuota = {
@@ -398,10 +401,10 @@ export class LabProvisionerService {
       spec: {
         hard: {
           pods: '1',
-          'requests.cpu': (isSidecarDind || isPodmanLab) ? (lab.cpuRequest || '100m') : (lab.cpuRequest || '250m'),
-          'requests.memory': (isSidecarDind || isPodmanLab) ? (lab.memoryRequest || '512Mi') : (lab.memoryRequest || '256Mi'),
-          'limits.cpu': (isSidecarDind || isPodmanLab) ? (lab.cpuLimit || '1') : (lab.cpuLimit || '1'),
-          'limits.memory': (isSidecarDind || isPodmanLab) ? (lab.memoryLimit || '2Gi') : (lab.memoryLimit || '1Gi'),
+          'requests.cpu': isHeavyRuntime ? (lab.cpuRequest || '100m') : (lab.cpuRequest || '250m'),
+          'requests.memory': isHeavyRuntime ? (lab.memoryRequest || '512Mi') : (lab.memoryRequest || '256Mi'),
+          'limits.cpu': isHeavyRuntime ? (lab.cpuLimit || '1') : (lab.cpuLimit || '1'),
+          'limits.memory': isHeavyRuntime ? (lab.memoryLimit || '2Gi') : (lab.memoryLimit || '1Gi'),
         },
       },
     };
@@ -426,7 +429,7 @@ export class LabProvisionerService {
       containerCommand = ['/bin/bash'];
     }
 
-    const isPrivilegedLab = isDind || isSidecarDind || isPodmanLab;
+    const isPrivilegedLab = isDind || isHeavyRuntime;
     const securityContext: k8s.V1SecurityContext = isPrivilegedLab
       ? { privileged: true, allowPrivilegeEscalation: true, readOnlyRootFilesystem: false }
       : { privileged: false, allowPrivilegeEscalation: true, readOnlyRootFilesystem: false };
@@ -519,6 +522,118 @@ export class LabProvisionerService {
           volumes: [
             {
               name: 'podman-storage',
+              emptyDir: {},
+            },
+          ],
+          restartPolicy: 'Never',
+        },
+      };
+    } else if (isBuildahLab) {
+      podSpec = {
+        metadata: {
+          name: podName,
+          namespace,
+          labels: {
+            app: 'buildah-lab',
+            'session-id': session.id,
+            'user-id': session.userId,
+            'lab-type': lab.slug,
+          },
+        },
+        spec: {
+          containers: [
+            {
+              name: 'lab-container',
+              image: lab.dockerImage || 'quay.io/buildah/stable',
+              command: ['/bin/sh', '-c', 'trap : TERM INT; sleep infinity & wait'],
+              env: [
+                { name: 'BUILDAH_ISOLATION', value: 'chroot' },
+                { name: 'STORAGE_DRIVER', value: 'vfs' },
+              ],
+              securityContext: {
+                privileged: true,
+                allowPrivilegeEscalation: true,
+                readOnlyRootFilesystem: false,
+              },
+              volumeMounts: [
+                {
+                  name: 'buildah-storage',
+                  mountPath: '/var/lib/containers',
+                },
+              ],
+              stdin: true,
+              tty: true,
+              resources: {
+                requests: { cpu: lab.cpuRequest || '100m', memory: lab.memoryRequest || '512Mi' },
+                limits: { cpu: lab.cpuLimit || '1', memory: lab.memoryLimit || '2Gi' },
+              },
+            },
+          ],
+          volumes: [
+            {
+              name: 'buildah-storage',
+              emptyDir: {},
+            },
+          ],
+          restartPolicy: 'Never',
+        },
+      };
+    } else if (isContainerdLab) {
+      podSpec = {
+        metadata: {
+          name: podName,
+          namespace,
+          labels: {
+            app: 'containerd-lab',
+            'session-id': session.id,
+            'user-id': session.userId,
+            'lab-type': lab.slug,
+          },
+        },
+        spec: {
+          containers: [
+            {
+              name: 'lab-container',
+              image: lab.dockerImage || 'docker:dind',
+              command: [
+                '/bin/sh',
+                '-c',
+                'mkdir -p /run/containerd /var/lib/containerd && containerd > /var/log/containerd.log 2>&1 & sleep 2 && trap : TERM INT; sleep infinity & wait',
+              ],
+              env: [
+                { name: 'CONTAINERD_ADDRESS', value: '/run/containerd/containerd.sock' },
+                { name: 'CONTAINERD_NAMESPACE', value: 'default' },
+              ],
+              securityContext: {
+                privileged: true,
+                allowPrivilegeEscalation: true,
+                readOnlyRootFilesystem: false,
+              },
+              volumeMounts: [
+                {
+                  name: 'containerd-storage',
+                  mountPath: '/var/lib/containerd',
+                },
+                {
+                  name: 'containerd-run',
+                  mountPath: '/run/containerd',
+                },
+              ],
+              stdin: true,
+              tty: true,
+              resources: {
+                requests: { cpu: lab.cpuRequest || '100m', memory: lab.memoryRequest || '512Mi' },
+                limits: { cpu: lab.cpuLimit || '1', memory: lab.memoryLimit || '2Gi' },
+              },
+            },
+          ],
+          volumes: [
+            {
+              name: 'containerd-storage',
+              emptyDir: {},
+            },
+            {
+              name: 'containerd-run',
               emptyDir: {},
             },
           ],

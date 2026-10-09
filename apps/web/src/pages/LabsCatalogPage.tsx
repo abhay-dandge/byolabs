@@ -30,7 +30,7 @@ export const LabsCatalogPage: React.FC = () => {
     }
   };
 
-  const categories = ['All', 'Linux', 'Docker', 'Podman', 'Kubernetes', 'Git', 'Ansible', 'Terraform'];
+  const categories = ['All', 'Linux', 'Docker', 'Podman', 'Containerd', 'Buildah', 'Kubernetes', 'Git', 'Ansible', 'Terraform'];
 
   const filteredLabs = labs.filter((lab) => {
     const matchesCategory = selectedCategory === 'All' || lab.category === selectedCategory;

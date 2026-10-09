@@ -653,6 +653,275 @@ Welcome to your Linux RHCSA & CLA Module 2 practical lab environment. Execute th
         },
         ],
     },
+    {
+      id: 'lab-containerd-playground',
+      slug: 'containerd-playground',
+      name: 'Containerd & ctr Image Lifecycle Playground',
+      description: 'Hands-on Containerd runtime playground. Master the industry-standard CNCF container runtime using ctr: image distribution, namespaces, container tasks, and runtime lifecycle debugging.',
+      category: 'Containerd',
+      difficulty: 'Intermediate',
+      durationMinutes: 60,
+      dockerImage: 'docker:dind',
+      cpuRequest: '250m',
+      cpuLimit: '1',
+      memoryRequest: '512Mi',
+      memoryLimit: '2Gi',
+      storage: '2Gi',
+      startupCommand: '/bin/sh',
+      terminalEnabled: true,
+      browserAccess: true,
+      isPublished: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      instructionsMarkdown: `
+# Containerd & ctr Lifecycle Playground
+
+Welcome to your isolated **Containerd** container environment running on the Kubernetes cluster.
+
+---
+
+## What is Containerd?
+**Containerd** is an industry-standard, core container runtime developed as a CNCF graduated project. It powers modern Docker and manages the complete container lifecycle of Kubernetes worker nodes (via CRI).
+
+### Core Concepts:
+- **Daemon**: \`containerd\` daemon running as a background service listening on \`/run/containerd/containerd.sock\`.
+- **Namespaces**: Containerd isolates images and containers within distinct namespaces (e.g. \`default\`, \`k8s.io\`, \`moby\`).
+- **Containers vs Tasks**: In Containerd, a *Container* holds the metadata, configuration, and image spec. A *Task* represents the actual running process executing on the host.
+
+---
+
+## Guided Exercises
+
+### Step 1: Verify Containerd Runtime & Version
+Inspect the active Containerd daemon and CLI client:
+
+\`\`\`bash
+ctr version
+ctr check
+\`\`\`
+
+### Step 2: Manage Containerd Namespaces
+Containerd uses namespaces to prevent naming collisions between subsystems:
+
+\`\`\`bash
+# List all active namespaces
+ctr namespaces list
+# (or shorthand: ctr ns ls)
+
+# Create a custom namespace for your project
+ctr namespaces create devops
+ctr ns ls
+\`\`\`
+
+### Step 3: Pull & Inspect OCI Images
+Pull an official image from Docker Hub into Containerd:
+*(Note: ctr requires fully-qualified registry references, e.g. docker.io/library/<image>:<tag>)*
+
+\`\`\`bash
+# Pull Alpine Linux into default namespace
+ctr images pull docker.io/library/alpine:latest
+
+# List pulled images
+ctr images list
+# (or shorthand: ctr i ls)
+\`\`\`
+
+### Step 4: Run Containers & Manage Tasks
+Launch and monitor a container task:
+
+\`\`\`bash
+# 1. Run an interactive one-off command
+ctr run --rm -t docker.io/library/alpine:latest test-box uname -a
+
+# 2. Run a detached background task
+ctr run -d docker.io/library/alpine:latest alpine-worker sleep 3600
+
+# 3. List active containers and running tasks
+ctr containers list
+ctr tasks list
+\`\`\`
+
+### Step 5: Stop & Remove Tasks and Containers
+Stop the process and clean up the container:
+
+\`\`\`bash
+# Stop/kill running task
+ctr tasks kill -s SIGKILL alpine-worker
+
+# Delete task and container definition
+ctr tasks rm alpine-worker
+ctr containers rm alpine-worker
+\`\`\`
+
+---
+
+## Tasks Checklist
+      `,
+      tasks: [
+        {
+          id: 'task-containerd-1',
+          title: '1. Verify Containerd Runtime (ctr version)',
+          description: 'Run `ctr version` in your terminal to verify client and daemon connectivity.',
+          validationScript: 'ctr version',
+        },
+        {
+          id: 'task-containerd-2',
+          title: '2. Create a Containerd Namespace ("devops")',
+          description: 'Create a new Containerd namespace named `devops` using `ctr namespaces create devops` (or `ctr ns create devops`).',
+          validationScript: 'ctr namespaces list | grep -q "devops" || ctr ns ls | grep -q "devops"',
+        },
+        {
+          id: 'task-containerd-3',
+          title: '3. Pull Alpine Image with ctr',
+          description: 'Pull the official Alpine image using `ctr images pull docker.io/library/alpine:latest`.',
+          validationScript: 'ctr images list | grep -q "alpine" || ctr -n devops images list | grep -q "alpine"',
+        },
+        {
+          id: 'task-containerd-4',
+          title: '4. Run an Alpine Container Task (alpine-worker)',
+          description: 'Launch a container task named `alpine-worker` using `ctr run -d docker.io/library/alpine:latest alpine-worker sleep 3600`.',
+          validationScript: 'ctr containers list | grep -q "alpine-worker" || ctr tasks list | grep -q "alpine-worker" || ctr -n devops containers list | grep -q "alpine-worker"',
+        },
+      ],
+    },
+    {
+      id: 'lab-buildah-playground',
+      slug: 'buildah-playground',
+      name: 'Buildah OCI Image Builder Playground',
+      description: 'Daemonless container image creation with Buildah. Build OCI images step-by-step from base images or scratch, manipulate container root filesystems directly, and compile Dockerfiles without running a Docker daemon.',
+      category: 'Buildah',
+      difficulty: 'Intermediate',
+      durationMinutes: 60,
+      dockerImage: 'quay.io/buildah/stable',
+      cpuRequest: '250m',
+      cpuLimit: '1',
+      memoryRequest: '512Mi',
+      memoryLimit: '2Gi',
+      storage: '2Gi',
+      startupCommand: '/bin/bash',
+      terminalEnabled: true,
+      browserAccess: true,
+      isPublished: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      instructionsMarkdown: `
+# Buildah OCI Image Builder Playground
+
+Welcome to your isolated **Buildah Playground**! Practice daemonless, secure OCI container builds without needing a running Docker daemon.
+
+---
+
+## What is Buildah?
+**Buildah** is a command-line tool developed by Red Hat and the open-source containers community. Unlike Docker:
+- **No background daemon** (\`dockerd\`) is required.
+- Builds can be performed inside unprivileged containers or rootless CI/CD pipelines.
+- Supports **interactive builds**: construct container images command-by-command directly from the shell or scripting.
+- Allows direct host filesystem mounts of container root filesystems (\`buildah mount\`).
+- Fully compatible with Dockerfiles via \`buildah bud\` (Build Using Dockerfile).
+
+---
+
+## Guided Exercises
+
+### Step 1: Inspect Buildah Engine & Configuration
+Verify your Buildah version and check storage configuration:
+
+\`\`\`bash
+buildah --version
+buildah info
+\`\`\`
+
+### Step 2: Interactive Container Construction
+Buildah lets you start a container from a base image and build up layers interactively:
+
+\`\`\`bash
+# 1. Create a working container from Alpine
+container=$(buildah from alpine)
+echo "Working container created: $container"
+
+# 2. Run commands inside the build container
+buildah run $container sh -c 'echo "Created with Buildah on BYOLabs" > /etc/byolabs.txt'
+buildah run $container cat /etc/byolabs.txt
+
+# 3. Configure container metadata, entrypoint, or environment variables
+buildah config --author "DevOps Engineer" $container
+buildah config --env APP_ENV=production $container
+buildah config --entrypoint '["cat", "/etc/byolabs.txt"]' $container
+
+# 4. Commit the container to a new OCI image
+buildah commit $container my-custom-image:v1
+
+# 5. Clean up the working container
+buildah rm $container
+\`\`\`
+
+### Step 3: Declarative Image Builds with Dockerfile (buildah bud)
+You can also build images using standard Dockerfiles using \`buildah bud\`:
+
+\`\`\`bash
+# Create a sample Dockerfile
+mkdir -p ~/myapp && cd ~/myapp
+cat << 'EOF' > Dockerfile
+FROM alpine:latest
+RUN echo "Hello from Buildah Dockerfile" > /hello.txt
+CMD ["cat", "/hello.txt"]
+EOF
+
+# Build image tagged webapp:latest
+buildah bud -t webapp:latest .
+
+# Verify the newly built image
+buildah images
+\`\`\`
+
+### Step 4: Direct Filesystem Mounts (buildah mount)
+One of Buildah's most powerful features is modifying container filesystems directly on the host without starting a container process:
+
+\`\`\`bash
+new_box=$(buildah from alpine)
+mountpoint=$(buildah mount $new_box)
+echo "Mounted at: $mountpoint"
+
+# Write directly to container filesystem via host path
+echo "Direct disk injection" > "$mountpoint/direct.txt"
+cat "$mountpoint/direct.txt"
+
+# Unmount when done
+buildah unmount $new_box
+buildah rm $new_box
+\`\`\`
+
+---
+
+## Tasks Checklist
+      `,
+      tasks: [
+        {
+          id: 'task-buildah-1',
+          title: '1. Verify Buildah Engine (buildah --version)',
+          description: 'Run `buildah --version` or `buildah info` in the terminal to inspect the Buildah runtime.',
+          validationScript: 'buildah --version || buildah info',
+        },
+        {
+          id: 'task-buildah-2',
+          title: '2. Create a Working Container from Alpine',
+          description: 'Create a new working container using `buildah from alpine`.',
+          validationScript: 'buildah containers | grep -i "alpine" || [ $(buildah containers -q | wc -l) -gt 0 ]',
+        },
+        {
+          id: 'task-buildah-3',
+          title: '3. Commit Custom Image (my-custom-image:v1)',
+          description: 'Commit your working container into a new image named `my-custom-image:v1` using `buildah commit <container> my-custom-image:v1`.',
+          validationScript: 'buildah images | grep -q "my-custom-image"',
+        },
+        {
+          id: 'task-buildah-4',
+          title: '4. Build Image using Dockerfile (buildah bud -t webapp:latest .)',
+          description: 'Create a Dockerfile and compile it into an image tagged `webapp:latest` using `buildah bud -t webapp:latest .`.',
+          validationScript: 'buildah images | grep -q "webapp"',
+        },
+      ],
+    },
   ];
 
   db.seedInitialData(seedLabs, adminUser, adminPasswordHash);

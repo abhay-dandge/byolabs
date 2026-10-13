@@ -350,52 +350,59 @@ podman pod inspect web-pod
       ],
     },
     {
-      id: 'lab-kubernetes-basics',
-      slug: 'kubernetes-basics',
-      name: 'Kubernetes Pods & Workload Basics',
-      description: 'Learn Kubernetes concepts, pod specifications, deployments, namespaces, and YAML manifests.',
-      category: 'Kubernetes',
-      difficulty: 'Intermediate',
-      durationMinutes: 60,
-      dockerImage: 'ubuntu:latest',
-      cpuRequest: '500m',
-      cpuLimit: '1',
-      memoryRequest: '512Mi',
-      memoryLimit: '1Gi',
-      startupCommand: '/bin/bash',
-      terminalEnabled: true,
-      browserAccess: true,
-      isPublished: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      instructionsMarkdown: `
-# Kubernetes Basics & Workloads
-
-Learn how Kubernetes manifests configure Pod specs and deployments.
-
-\`\`\`bash
-cat << 'EOF' > pod.yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: nginx-pod
-spec:
-  containers:
-  - name: nginx
-    image: nginx:alpine
-EOF
-cat pod.yaml
-\`\`\`
-      `,
-      tasks: [
-        {
-          id: 'task-k8s-1',
-          title: 'Create Pod Manifest',
-          description: 'Create a file named `pod.yaml` containing a valid Kubernetes Pod specification.',
-          validationScript: 'grep -i "kind: Pod" pod.yaml || grep -i "kind: Pod" ~/pod.yaml',
-        },
-      ],
+  id: "lab-kubernetes-basics",
+  slug: "kubernetes-basics",
+  name: "Kubernetes Pods & Workloads (KinD Cluster)",
+  description: "Full interactive single-node Kubernetes v1.31 cluster powered by KinD. Practice writing pod specs, deployments, services, namespaces, and imperative kubectl commands.",
+  category: "Kubernetes",
+  difficulty: "Intermediate",
+  durationMinutes: 60,
+  dockerImage: "docker:dind",
+  cpuRequest: "250m",
+  cpuLimit: "1.5",
+  memoryRequest: "512Mi",
+  memoryLimit: "2Gi",
+  storage: "2Gi",
+  startupCommand: "/bin/bash",
+  terminalEnabled: true,
+  browserAccess: true,
+  isPublished: true,
+  createdAt: "2026-10-13T13:49:10.020Z",
+  updatedAt: "2026-10-13T13:49:10.020Z",
+  instructionsMarkdown: "\n# Kubernetes Pods & Workload Basics (KinD Cluster)\n\nWelcome to your isolated, dedicated **Kubernetes v1.31** cluster powered by KinD (Kubernetes in Docker)!\nYou have full **`cluster-admin`** privileges inside this environment.\n\n---\n\n## ⚡ Verification & Getting Started\nYour cluster bootstraps automatically on startup (~18s). Check your single-node control plane:\n\n```bash\nkubectl get nodes\nkubectl cluster-info\nalias k=kubectl\n```\n\n---\n\n## Guided Exercises\n\n### Step 1: Create a Custom Namespace\nIsolate application workloads inside a dedicated namespace:\n\n```bash\nkubectl create namespace dev\nkubectl get namespaces\n```\n\n### Step 2: Deploy an Imperative Pod\nLaunch a standalone Nginx pod inside the `dev` namespace:\n\n```bash\nkubectl run web-pod --image=nginx:alpine -n dev\nkubectl get pods -n dev\n```\n\n### Step 3: Create a Scalable Deployment\nDeploy a replicated web application:\n\n```bash\nkubectl create deployment api-server --image=nginx:alpine --replicas=2 -n dev\nkubectl get deployments -n dev\nkubectl get pods -n dev -l app=api-server\n```\n\n### Step 4: Expose the Deployment with a Service\nCreate a Service to balance traffic across the pods:\n\n```bash\nkubectl expose deployment api-server --port=80 --type=NodePort -n dev\nkubectl get svc -n dev\n```\n\n### Step 5: Declarative YAML Manifest\nPractice writing and applying a declarative YAML manifest:\n\n```bash\ncat << 'EOF' > my-app.yaml\napiVersion: v1\nkind: Pod\nmetadata:\n  name: demo-app\n  namespace: dev\n  labels:\n    tier: frontend\nspec:\n  containers:\n  - name: web\n    image: nginx:alpine\n    ports:\n    - containerPort: 80\nEOF\n\nkubectl apply -f my-app.yaml\nkubectl get pod demo-app -n dev\n```\n  ",
+  tasks: [
+    {
+      id: "task-k8s-1",
+      title: "1. Verify Cluster Health (kubectl get nodes)",
+      description: "Run `kubectl get nodes` to verify the kind-control-plane node is in Ready status.",
+      validationScript: "kubectl get nodes --no-headers 2>/dev/null | grep -q \"Ready\""
     },
+    {
+      id: "task-k8s-2",
+      title: "2. Create \"dev\" Namespace",
+      description: "Create a namespace named `dev` using `kubectl create namespace dev`.",
+      validationScript: "kubectl get ns dev >/dev/null 2>&1"
+    },
+    {
+      id: "task-k8s-3",
+      title: "3. Run \"web-pod\" in \"dev\" Namespace",
+      description: "Launch a pod named `web-pod` running `nginx:alpine` inside the `dev` namespace.",
+      validationScript: "kubectl get pod web-pod -n dev >/dev/null 2>&1"
+    },
+    {
+      id: "task-k8s-4",
+      title: "4. Create \"api-server\" Deployment (2 Replicas)",
+      description: "Create a deployment named `api-server` with 2 replicas in the `dev` namespace.",
+      validationScript: "kubectl get deployment api-server -n dev >/dev/null 2>&1"
+    },
+    {
+      id: "task-k8s-5",
+      title: "5. Expose \"api-server\" as a Service",
+      description: "Expose `api-server` on port 80 as a Service in the `dev` namespace.",
+      validationScript: "kubectl get svc api-server -n dev >/dev/null 2>&1"
+    }
+  ]
+},
     {
       id: 'lab-git-playground',
       slug: 'git-playground',
@@ -922,6 +929,204 @@ buildah rm $new_box
         },
       ],
     },
+    {
+      id: 'lab-terraform-fundamentals',
+      slug: 'terraform-fundamentals',
+      name: "Terraform Infrastructure as Code (IaC) Fundamentals",
+      description: "Master declarative Infrastructure as Code using HashiCorp Terraform. Practice HCL syntax, provider declarations, resource dependencies, local state management, execution plans, and input/output variables.",
+      category: 'Terraform',
+      difficulty: 'Intermediate',
+      durationMinutes: 60,
+      dockerImage: 'hashicorp/terraform:latest',
+      cpuRequest: '250m',
+      cpuLimit: '1',
+      memoryRequest: '256Mi',
+      memoryLimit: '1Gi',
+      storage: '1Gi',
+      startupCommand: '/bin/sh',
+      terminalEnabled: true,
+      browserAccess: true,
+      isPublished: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      instructionsMarkdown: "\n# Terraform Infrastructure as Code (IaC) Fundamentals\n\nWelcome to your dedicated **HashiCorp Terraform** sandbox environment running in an isolated container.\n\n---\n\n## 🛠️ What is Terraform?\n**Terraform** is the industry standard for declarative **Infrastructure as Code (IaC)**. With Terraform, you describe your desired infrastructure topology in human-readable HashiCorp Configuration Language (HCL). Terraform then generates an execution plan and provisions the infrastructure safely and deterministically.\n\n### The Core Terraform Workflow:\n1. **Write**: Define resources and providers in `.tf` configuration files.\n2. **Init** (`terraform init`): Initialize the working directory and install required provider plugins.\n3. **Plan** (`terraform plan`): Preview changes that Terraform will make against the active state.\n4. **Apply** (`terraform apply`): Provision or mutate the declared resources.\n5. **Destroy** (`terraform destroy`): Tear down managed infrastructure.\n\n---\n\n## 🚀 Guided Exercises\n\n### Step 1: Verify the Terraform CLI\nCheck your installed Terraform version in the interactive terminal:\n\n```sh\nterraform version\nterraform -help\n```\n\n### Step 2: Create a Working Directory & Provider Spec\nCreate a dedicated workspace directory `/root/terraform-lab` and declare a `local` provider in `main.tf`:\n\n```sh\nmkdir -p /root/terraform-lab && cd /root/terraform-lab\n\ncat << 'EOF' > main.tf\nterraform {\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nprovider \"local\" {}\n\nresource \"local_file\" \"config\" {\n  content  = \"environment = production\\napp_name = byolabs-api\\nmanaged_by = terraform\\n\"\n  filename = \"${path.module}/app-config.conf\"\n  file_permission = \"0644\"\n}\n\nresource \"local_file\" \"inventory\" {\n  content  = \"[webservers]\\n10.0.1.10\\n10.0.1.11\\n\"\n  filename = \"${path.module}/hosts.ini\"\n}\nEOF\n```\n\n### Step 3: Initialize the Project (`terraform init`)\nDownload and initialize the local provider plugin:\n\n```sh\nterraform init\nls -la .terraform\n```\n\n### Step 4: Plan & Apply Infrastructure (`terraform apply`)\nGenerate the execution plan and apply the declared configuration:\n\n```sh\nterraform plan\nterraform apply -auto-approve\n\n# Inspect the generated configuration files\nls -la\ncat app-config.conf\ncat hosts.ini\n```\n\n### Step 5: Declare Outputs and Variables\nAdd input variables and output expressions:\n\n```sh\ncat << 'EOF' > outputs.tf\noutput \"config_file_path\" {\n  description = \"Path to generated config file\"\n  value       = local_file.config.filename\n}\n\noutput \"config_file_id\" {\n  description = \"SHA1 ID of the config file\"\n  value       = local_file.config.id\n}\nEOF\n\nterraform apply -auto-approve\nterraform output\n```\n\n### Step 6: Inspect Active State\nVerify state management commands:\n\n```sh\nterraform show\nterraform state list\n```\n\n---\n\n## 📋 Tasks Checklist\n",
+      tasks: [
+              {
+                      "id": "task-tf-1",
+                      "title": "1. Verify Terraform CLI (terraform version)",
+                      "description": "Execute `terraform version` in the terminal to inspect the active Terraform installation.",
+                      "validationScript": "terraform version"
+              },
+              {
+                      "id": "task-tf-2",
+                      "title": "2. Initialize Project in /root/terraform-lab",
+                      "description": "Create `/root/terraform-lab`, add `main.tf` with the `local` provider, and execute `terraform init`.",
+                      "validationScript": "test -d /root/terraform-lab/.terraform || test -d ~/terraform-lab/.terraform || test -d .terraform"
+              },
+              {
+                      "id": "task-tf-3",
+                      "title": "3. Provision Resources with terraform apply",
+                      "description": "Apply your configuration with `terraform apply -auto-approve` to generate `app-config.conf` and the state file.",
+                      "validationScript": "test -f /root/terraform-lab/app-config.conf || test -f ~/terraform-lab/app-config.conf || test -f app-config.conf"
+              },
+              {
+                      "id": "task-tf-4",
+                      "title": "4. Configure Outputs & Verify State",
+                      "description": "Define outputs in `outputs.tf` and verify that `terraform state list` tracks managed resources.",
+                      "validationScript": "(cd /root/terraform-lab 2>/dev/null || cd ~/terraform-lab 2>/dev/null || true) && terraform state list | grep -q \"local_file\""
+              }
+      ]
+    },
+    {
+      id: 'lab-ansible-automation',
+      slug: 'ansible-automation',
+      name: "Ansible Automation & Playbook Fundamentals",
+      description: "Master agentless IT automation with Ansible. Practice creating inventory hosts, executing ad-hoc commands, authoring YAML playbooks, managing file resources, and ensuring idempotent execution.",
+      category: 'Ansible',
+      difficulty: 'Intermediate',
+      durationMinutes: 60,
+      dockerImage: 'cytopia/ansible:latest',
+      cpuRequest: '250m',
+      cpuLimit: '1',
+      memoryRequest: '256Mi',
+      memoryLimit: '1Gi',
+      storage: '1Gi',
+      startupCommand: '/bin/sh',
+      terminalEnabled: true,
+      browserAccess: true,
+      isPublished: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      instructionsMarkdown: "\n# Ansible Automation & Playbook Fundamentals\n\nWelcome to your dedicated **Ansible Control Node** environment running in an isolated container.\n\n---\n\n## 🛠️ What is Ansible?\n**Ansible** is an open-source, agentless IT automation engine. It automates cloud provisioning, configuration management, application deployment, and intraservice orchestration using simple, human-readable YAML playbooks.\n\n### Core Architecture Concepts:\n- **Control Node**: The machine where Ansible is installed and from which automation is run.\n- **Inventory**: A list of managed nodes (hosts) organized into groups (INI or YAML format).\n- **Modules**: Discrete units of code executed by Ansible (e.g. `ping`, `command`, `copy`, `file`).\n- **Playbooks**: YAML specifications declaring the desired end-state across managed hosts.\n- **Idempotency**: Running a playbook multiple times produces the same result without unintended changes.\n\n---\n\n## 🚀 Guided Exercises\n\n### Step 1: Verify Ansible Control Node\nCheck your installed Ansible engine and Python environment:\n\n```sh\nansible --version\nansible-config dump --only-changed\n```\n\n### Step 2: Set Up Workspace & Local Inventory\nCreate your project folder `/root/ansible-lab` and declare a local target in `inventory.ini`:\n\n```sh\nmkdir -p /root/ansible-lab && cd /root/ansible-lab\n\ncat << 'EOF' > inventory.ini\n[local]\nlocalhost ansible_connection=local ansible_python_interpreter=/usr/bin/python3\n\n[webservers]\nweb-01 ansible_connection=local\nEOF\n```\n\n### Step 3: Run Ad-Hoc Commands\nExecute immediate ad-hoc modules without writing a playbook:\n\n```sh\n# Test connectivity using the ping module\nansible localhost -i inventory.ini -m ping\n\n# Run a shell command via command module\nansible localhost -i inventory.ini -m command -a \"df -h\"\n\n# Collect system facts\nansible localhost -i inventory.ini -m setup -a \"filter=ansible_distribution*\"\n```\n\n### Step 4: Author a Multi-Task Playbook\nCreate a complete automation playbook `site.yml`:\n\n```sh\ncat << 'EOF' > site.yml\n---\n- name: Enterprise System Setup Playbook\n  hosts: localhost\n  connection: local\n  gather_facts: false\n  vars:\n    app_name: \"byolabs-worker\"\n    target_dir: \"/tmp/byolabs\"\n\n  tasks:\n    - name: Ensure target directory exists\n      ansible.builtin.file:\n        path: \"{{ target_dir }}\"\n        state: directory\n        mode: '0755'\n\n    - name: Deploy application release metadata\n      ansible.builtin.copy:\n        dest: \"{{ target_dir }}/release.json\"\n        content: |\n          {\n            \"app\": \"{{ app_name }}\",\n            \"version\": \"1.0.0\",\n            \"status\": \"ready\"\n          }\n        mode: '0644'\n\n    - name: Generate verification stamp\n      ansible.builtin.copy:\n        dest: \"/tmp/ansible-verified.txt\"\n        content: \"Ansible Playbook completed successfully on BYOLabs!\\n\"\n        mode: '0644'\nEOF\n```\n\n### Step 5: Syntax Check & Run the Playbook\nVerify YAML syntax and execute the playbook:\n\n```sh\nansible-playbook -i inventory.ini site.yml --syntax-check\nansible-playbook -i inventory.ini site.yml\n\n# Inspect the generated artifacts\ncat /tmp/byolabs/release.json\ncat /tmp/ansible-verified.txt\n```\n\n### Step 6: Test Playbook Idempotency\nRun the playbook a second time. Notice that tasks report `ok` instead of `changed`:\n\n```sh\nansible-playbook -i inventory.ini site.yml\n```\n\n---\n\n## 📋 Tasks Checklist\n",
+      tasks: [
+              {
+                      "id": "task-ansible-1",
+                      "title": "1. Verify Ansible Installation (ansible --version)",
+                      "description": "Execute `ansible --version` in the terminal to inspect the active Ansible installation.",
+                      "validationScript": "ansible --version"
+              },
+              {
+                      "id": "task-ansible-2",
+                      "title": "2. Configure Inventory with Local Target",
+                      "description": "Create `/root/ansible-lab/inventory.ini` containing `localhost` configured with `ansible_connection=local`.",
+                      "validationScript": "grep -q \"ansible_connection=local\" /root/ansible-lab/inventory.ini || grep -q \"ansible_connection=local\" ~/ansible-lab/inventory.ini || grep -q \"ansible_connection=local\" inventory.ini"
+              },
+              {
+                      "id": "task-ansible-3",
+                      "title": "3. Execute Successful Ad-hoc Ping",
+                      "description": "Execute `ansible localhost -i inventory.ini -m ping` to test local module execution.",
+                      "validationScript": "ansible localhost -i /root/ansible-lab/inventory.ini -m ping 2>/dev/null | grep -q \"SUCCESS\" || ansible localhost -i ~/ansible-lab/inventory.ini -m ping 2>/dev/null | grep -q \"SUCCESS\" || ansible localhost -m ping 2>/dev/null | grep -q \"SUCCESS\""
+              },
+              {
+                      "id": "task-ansible-4",
+                      "title": "4. Execute Playbook and Generate Artifacts",
+                      "description": "Run `site.yml` using `ansible-playbook` to generate `/tmp/ansible-verified.txt` and `/tmp/byolabs/release.json`.",
+                      "validationScript": "test -f /tmp/ansible-verified.txt && test -f /tmp/byolabs/release.json"
+              }
+      ]
+    },
+    {
+      id: 'lab-opensuse-playground',
+      slug: 'opensuse-playground',
+      name: "openSUSE Leap Administration & Zypper Playground",
+      description: "Hands-on openSUSE Leap enterprise sandbox. Master the Zypper package manager (zypper refresh, install, search), RPM repository administration, user management, and openSUSE system administration.",
+      category: 'Linux',
+      difficulty: 'Beginner',
+      durationMinutes: 60,
+      dockerImage: 'opensuse/leap:latest',
+      cpuRequest: '250m',
+      cpuLimit: '1',
+      memoryRequest: '256Mi',
+      memoryLimit: '1Gi',
+      storage: '1Gi',
+      startupCommand: '/bin/bash',
+      terminalEnabled: true,
+      browserAccess: true,
+      isPublished: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      instructionsMarkdown: "\n# openSUSE Leap Administration & Zypper Playground\n\nWelcome to your isolated **openSUSE Leap** container environment running as a Kubernetes pod.\n\n---\n\n## 🦎 What is openSUSE Leap?\n**openSUSE Leap** is a community Linux distribution that shares its core codebase with **SUSE Linux Enterprise (SLE)**. It is known for its rock-solid stability, enterprise-grade package management, and system administration tooling.\n\n### The Zypper Package Manager:\n`zypper` is the powerful command-line interface for the `libzypp` package management library. Common commands include:\n- `zypper lr`: List configured repositories.\n- `zypper ref`: Refresh metadata from remote repositories.\n- `zypper in <pkg>`: Install a package.\n- `zypper rm <pkg>`: Remove a package.\n- `zypper se <pkg>`: Search for available packages.\n- `zypper info <pkg>`: View detailed package metadata.\n\n---\n\n## 🚀 Guided Exercises\n\n### Step 1: Inspect openSUSE System Information\nVerify your OS release and kernel details in the interactive terminal:\n\n```bash\ncat /etc/os-release\ncat /etc/SUSE-brand\nuname -a\n```\n\n### Step 2: Query Zypper Repositories\nInspect the active openSUSE repositories:\n\n```bash\n# List repositories with detailed URLs and aliases\nzypper lr -d\n\n# Refresh repository metadata caches\nzypper refresh\n```\n\n### Step 3: Search and Query Packages\nSearch the repositories for system tools:\n\n```bash\nzypper search --details curl\nzypper info vim\n```\n\n### Step 4: Install System Utilities with Zypper\nInstall packages non-interactively:\n\n```bash\nzypper --non-interactive install -y tree vim\n\n# Verify installed binaries\nwhich tree\ntree --version\n```\n\n### Step 5: System Administration & User Provisioning\nCreate a new administrative user following openSUSE defaults:\n\n```bash\nuseradd -m -s /bin/bash -c \"SUSE Systems Admin\" suseadmin\nid suseadmin\nls -la /home/suseadmin\n```\n\n### Step 6: Query RPM Database Directly\nInspect installed packages using the low-level RPM command:\n\n```bash\nrpm -qa | grep -i opensuse\nrpm -qil tree\n```\n\n---\n\n## 📋 Tasks Checklist\n",
+      tasks: [
+              {
+                      "id": "task-suse-1",
+                      "title": "1. Inspect openSUSE OS Release",
+                      "description": "Execute `cat /etc/os-release` in the terminal to inspect the openSUSE distribution.",
+                      "validationScript": "grep -i \"opensuse\" /etc/os-release"
+              },
+              {
+                      "id": "task-suse-2",
+                      "title": "2. Query Active Zypper Repositories",
+                      "description": "Run `zypper lr` in the terminal to inspect active package repositories.",
+                      "validationScript": "zypper lr 2>/dev/null | grep -qE \"repo|Alias|Name|#\""
+              },
+              {
+                      "id": "task-suse-3",
+                      "title": "3. Install \"tree\" via Zypper",
+                      "description": "Install the `tree` utility using `zypper --non-interactive install -y tree`.",
+                      "validationScript": "command -v tree >/dev/null 2>&1 || rpm -q tree >/dev/null 2>&1"
+              },
+              {
+                      "id": "task-suse-4",
+                      "title": "4. Create Administrative User \"suseadmin\"",
+                      "description": "Create user `suseadmin` with a home directory and bash shell using `useradd -m -s /bin/bash suseadmin`.",
+                      "validationScript": "id suseadmin >/dev/null 2>&1 && test -d /home/suseadmin"
+              }
+      ]
+    },
+    {
+      id: 'lab-git-advanced-workflows',
+      slug: 'git-advanced-workflows',
+      name: "Git Branching, Merge Conflicts & Interactive Rebase",
+      description: "Master real-world Git version control workflows. Practice feature branching, simulating and resolving three-way merge conflicts, rebasing feature commits onto main, and inspecting DAG commit history.",
+      category: 'Git',
+      difficulty: 'Intermediate',
+      durationMinutes: 60,
+      dockerImage: 'ubuntu:latest',
+      cpuRequest: '250m',
+      cpuLimit: '1',
+      memoryRequest: '256Mi',
+      memoryLimit: '1Gi',
+      storage: '1Gi',
+      startupCommand: '/bin/bash',
+      terminalEnabled: true,
+      browserAccess: true,
+      isPublished: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      instructionsMarkdown: "\n# Git Branching, Merge Conflicts & Interactive Rebase\n\nWelcome to your dedicated **Git Advanced Workflows** container environment.\n\n---\n\n## 🛠️ What You Will Master\nIn enterprise DevOps and software engineering, engineers collaborate across multiple feature branches. Merges don't always apply cleanly, and linear Git histories require mastering rebasing. This lab guides you through:\n1. Branch creation and HEAD pointers.\n2. Generating divergent commits across parallel branches.\n3. Understanding Git merge conflict markers (`<<<<<<< HEAD`, `=======`, `>>>>>>>`).\n4. Manually resolving conflicts and recording clean merge commits.\n5. Rebasing feature branches onto `main` for a clean, linear commit graph.\n\n---\n\n## 🚀 Guided Exercises\n\n### Step 1: Configure Git Identity & Initialize Workspace\nSet up global identity and create the workspace directory `/root/git-advanced`:\n\n```bash\ngit config --global user.name \"DevOps Engineer\"\ngit config --global user.email \"engineer@byolabs.in\"\ngit config --global init.defaultBranch main\n\nmkdir -p /root/git-advanced && cd /root/git-advanced\ngit init\n```\n\n### Step 2: Create Main Branch with Initial Codebase\nCreate `app.py` and commit it to the `main` branch:\n\n```bash\ncat << 'EOF' > app.py\n# BYOLabs Web Application Core\nVERSION = \"1.0.0\"\n\ndef get_status():\n    return {\"status\": \"ok\", \"service\": \"api-gateway\"}\n\ndef handle_request():\n    print(\"Processing request standard pipeline\")\nEOF\n\ngit add app.py\ngit commit -m \"feat: initial commit with api-gateway core\"\ngit branch -M main\n```\n\n### Step 3: Create Feature Branch \"feature/auth\"\nBranch off `main` and make modifications to `app.py`:\n\n```bash\ngit checkout -b feature/auth\n\ncat << 'EOF' > app.py\n# BYOLabs Web Application Core\nVERSION = \"1.1.0-auth\"\n\ndef get_status():\n    return {\"status\": \"ok\", \"service\": \"api-gateway\", \"auth\": \"jwt\"}\n\ndef handle_request():\n    print(\"Processing request with OAuth2 JWT validator\")\nEOF\n\ngit commit -am \"feat(auth): integrate JWT token validation pipeline\"\n```\n\n### Step 4: Create Divergent Commit on Main Branch\nSwitch back to `main` and make a conflicting edit to `app.py`:\n\n```bash\ngit checkout main\n\ncat << 'EOF' > app.py\n# BYOLabs Web Application Core\nVERSION = \"1.1.0-metrics\"\n\ndef get_status():\n    return {\"status\": \"ok\", \"service\": \"api-gateway\", \"telemetry\": \"prometheus\"}\n\ndef handle_request():\n    print(\"Processing request with OpenTelemetry metrics\")\nEOF\n\ngit commit -am \"feat(telemetry): add Prometheus metrics collector\"\n```\n\n### Step 5: Merge and Resolve Conflict\nTrigger a merge conflict and resolve it cleanly:\n\n```bash\n# Trigger the merge conflict\ngit merge feature/auth || true\n\n# Inspect the conflict markers\ncat app.py\n\n# Resolve the conflict by combining both features\ncat << 'EOF' > app.py\n# BYOLabs Web Application Core\nVERSION = \"1.1.0\"\n\ndef get_status():\n    return {\"status\": \"ok\", \"service\": \"api-gateway\", \"auth\": \"jwt\", \"telemetry\": \"prometheus\"}\n\ndef handle_request():\n    print(\"Processing request with OAuth2 JWT validator and OpenTelemetry metrics\")\nEOF\n\ngit add app.py\ngit commit -m \"merge: resolve conflict combining auth and telemetry\"\n```\n\n### Step 6: Rebase a Feature Branch onto Main\nCreate a second feature branch and rebase it linearly onto updated `main`:\n\n```bash\ngit checkout -b feature/cache\necho '# Redis cache client' > cache.py\ngit add cache.py\ngit commit -m \"feat(cache): add redis caching interface\"\n\n# Rebase cleanly onto main\ngit rebase main\n\n# Inspect the commit DAG graph\ngit log --graph --oneline --decorate --all\n```\n\n---\n\n## 📋 Tasks Checklist\n",
+      tasks: [
+              {
+                      "id": "task-gitadv-1",
+                      "title": "1. Initialize /root/git-advanced & Configure Identity",
+                      "description": "Initialize git in `/root/git-advanced` and configure `user.name` and `user.email`.",
+                      "validationScript": "test -d /root/git-advanced/.git && git -C /root/git-advanced config user.name >/dev/null"
+              },
+              {
+                      "id": "task-gitadv-2",
+                      "title": "2. Create Base Commit on \"main\" Branch",
+                      "description": "Create `app.py` and commit it to the `main` branch with `git commit`.",
+                      "validationScript": "test -f /root/git-advanced/app.py && git -C /root/git-advanced rev-parse --verify main >/dev/null 2>&1"
+              },
+              {
+                      "id": "task-gitadv-3",
+                      "title": "3. Create \"feature/auth\" Branch with Custom Commit",
+                      "description": "Create and checkout branch `feature/auth`, modify `app.py`, and commit changes.",
+                      "validationScript": "git -C /root/git-advanced rev-parse --verify feature/auth >/dev/null 2>&1"
+              },
+              {
+                      "id": "task-gitadv-4",
+                      "title": "4. Merge \"feature/auth\" into \"main\" & Resolve Conflicts",
+                      "description": "Merge `feature/auth` into `main`, resolve conflict markers in `app.py`, and complete the merge commit.",
+                      "validationScript": "git -C /root/git-advanced log --merges -n 1 >/dev/null 2>&1 && ! grep -q \"<<<<<<\" /root/git-advanced/app.py"
+              },
+              {
+                      "id": "task-gitadv-5",
+                      "title": "5. Create & Rebase \"feature/cache\" onto \"main\"",
+                      "description": "Create branch `feature/cache` with `cache.py`, and rebase it onto `main` with `git rebase main`.",
+                      "validationScript": "git -C /root/git-advanced rev-parse --verify feature/cache >/dev/null 2>&1 && [ \"$(git -C /root/git-advanced merge-base main feature/cache)\" = \"$(git -C /root/git-advanced rev-parse main)\" ]"
+              }
+      ]
+    }
   ];
 
   db.seedInitialData(seedLabs, adminUser, adminPasswordHash);

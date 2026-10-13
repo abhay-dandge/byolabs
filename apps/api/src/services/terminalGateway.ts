@@ -106,7 +106,13 @@ function connectKubectlExecStream(ws: WebSocket, session: any): Promise<boolean>
     const podName = session.podName;
     const contextName = k8sProvisioner.getClusterContextForSession(session);
 
-    const proc = spawn('kubectl', ['--context', contextName, 'exec', '-i', '-n', namespace, podName, '--', '/bin/bash'], {
+    const lab = db.getLabById(session.labId);
+    const isDockerLab = session.labSlug?.includes('docker') || session.labId?.includes('docker');
+    const isContainerdLab = session.labSlug?.includes('containerd') || session.labId?.includes('containerd');
+    const isShLab = isDockerLab || isContainerdLab || lab?.startupCommand === '/bin/sh';
+    const targetShell = isShLab ? '/bin/sh' : '/bin/bash';
+
+    const proc = spawn('kubectl', ['--context', contextName, 'exec', '-i', '-n', namespace, podName, '--', targetShell], {
       env: { ...process.env, TERM: 'xterm-256color' },
     });
 
@@ -350,11 +356,13 @@ async function connectK8sExecStream(ws: WebSocket, session: any, kc: k8s.KubeCon
     });
   };
 
+  const lab = db.getLabById(session.labId);
   const isDockerLab = session.labSlug?.includes('docker') || session.labId?.includes('docker');
   const isContainerdLab = session.labSlug?.includes('containerd') || session.labId?.includes('containerd');
+  const isShLab = isDockerLab || isContainerdLab || lab?.startupCommand === '/bin/sh';
 
   try {
-    if (isDockerLab || isContainerdLab) {
+    if (isShLab) {
       await tryExecShell(['/bin/sh']);
     } else {
       await tryExecShell(['/bin/bash']);

@@ -393,7 +393,8 @@ export class LabProvisionerService {
     const isPodmanLab = lab.category === 'Podman' || lab.slug?.includes('podman') || (lab.dockerImage && lab.dockerImage.includes('podman'));
     const isBuildahLab = lab.category === 'Buildah' || lab.slug?.includes('buildah') || (lab.dockerImage && lab.dockerImage.includes('buildah'));
     const isContainerdLab = lab.category === 'Containerd' || lab.slug?.includes('containerd') || (lab.dockerImage && lab.dockerImage.includes('containerd'));
-    const isHeavyRuntime = isSidecarDind || isPodmanLab || isBuildahLab || isContainerdLab;
+    const isKindLab = lab.category === 'Kubernetes' || lab.slug?.includes('kind') || lab.slug?.includes('kubernetes');
+    const isHeavyRuntime = isSidecarDind || isPodmanLab || isBuildahLab || isContainerdLab || isKindLab;
 
     // 2. Create ResourceQuota in namespace
     const quotaSpec: k8s.V1ResourceQuota = {
@@ -640,6 +641,91 @@ export class LabProvisionerService {
           restartPolicy: 'Never',
         },
       };
+    } else if (isKindLab) {
+      const kindScript = [
+        'apk add --no-cache bash curl wget jq >/dev/null 2>&1',
+        'dockerd > /var/log/dockerd.log 2>&1 &',
+        'while ! docker info >/dev/null 2>&1; do sleep 1; done',
+        'if [ ! -f /usr/local/bin/kind ]; then wget -qO /usr/local/bin/kind https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64 && chmod +x /usr/local/bin/kind; fi',
+        'if [ ! -f /usr/local/bin/kubectl ]; then wget -qO /usr/local/bin/kubectl https://dl.k8s.io/release/v1.31.0/bin/linux/amd64/kubectl && chmod +x /usr/local/bin/kubectl; fi',
+        'mkdir -p /root/.kube',
+        'echo "export KUBECONFIG=/root/.kube/config" >> /root/.bashrc',
+        'echo "export KUBECONFIG=/root/.kube/config" >> /root/.profile',
+        'echo "export KUBECONFIG=/root/.kube/config" >> /etc/profile',
+        'echo "alias k=kubectl" >> /root/.bashrc',
+        'echo "alias k=kubectl" >> /root/.profile',
+        'echo "alias k=kubectl" >> /etc/profile',
+        'cat << "BANNER" >> /root/.bashrc',
+        'if [ ! -f /var/run/kind-ready ]; then',
+        '  echo -e "\\n\\033[1;33m⏳ Bootstrapping your dedicated Kubernetes (KinD) cluster (~30s)...\\033[0m"',
+        '  while [ ! -f /var/run/kind-ready ]; do',
+        '    echo -ne "\\033[0;36m• Starting control-plane & kubelet... \\033[0m\\r"',
+        '    sleep 2',
+        '  done',
+        '  echo -e "\\n\\033[1;32m✔ Kubernetes cluster is READY! Type \\"kubectl get nodes\\" to begin.\\033[0m\\n"',
+        'else',
+        '  echo -e "\\n\\033[1;32m✔ Dedicated Kubernetes (KinD v1.31) Cluster is READY!\\033[0m"',
+        '  echo -e "\\033[0;36m💡 Try: kubectl get nodes | kubectl get pods -A | alias k=kubectl\\033[0m\\n"',
+        'fi',
+        'BANNER',
+        'cat /root/.bashrc >> /root/.profile',
+        'kind create cluster --kubeconfig /root/.kube/config --wait 90s > /var/log/kind-init.log 2>&1',
+        'chmod 644 /root/.kube/config',
+        'touch /var/run/kind-ready',
+        'echo "KIND_BOOTSTRAP_COMPLETE" >> /var/log/kind-init.log',
+        'trap : TERM INT; sleep infinity & wait'
+      ].join('\n');
+
+      podSpec = {
+        metadata: {
+          name: podName,
+          namespace,
+          labels: {
+            app: 'kind-lab',
+            'session-id': session.id,
+            'user-id': session.userId,
+            'lab-type': lab.slug,
+          },
+        },
+        spec: {
+          automountServiceAccountToken: false,
+          containers: [
+            {
+              name: 'lab-container',
+              image: 'docker:dind',
+              command: ['/bin/sh', '-c', kindScript],
+              env: [
+                { name: 'KUBECONFIG', value: '/root/.kube/config' },
+                { name: 'ENV', value: '/root/.bashrc' },
+              ],
+              securityContext: {
+                privileged: true,
+                allowPrivilegeEscalation: true,
+                readOnlyRootFilesystem: false,
+              },
+              volumeMounts: [
+                {
+                  name: 'docker-storage',
+                  mountPath: '/var/lib/docker',
+                },
+              ],
+              stdin: true,
+              tty: true,
+              resources: {
+                requests: { cpu: lab.cpuRequest || '250m', memory: lab.memoryRequest || '512Mi' },
+                limits: { cpu: lab.cpuLimit || '1.5', memory: lab.memoryLimit || '2Gi' },
+              },
+            },
+          ],
+          volumes: [
+            {
+              name: 'docker-storage',
+              emptyDir: {},
+            },
+          ],
+          restartPolicy: 'Never',
+        },
+      };
     } else {
       podSpec = {
         metadata: {
@@ -725,7 +811,7 @@ export class LabProvisionerService {
     // Wait for Pod Ready (poll up to 90s for image pulling)
     let isReady = false;
     let lastPhase = 'Unknown';
-    for (let i = 0; i < 90; i++) {
+    for (let i = 0; i < 180; i++) {
       await new Promise((r) => setTimeout(r, 1000));
       try {
         const podRes = await coreV1Api.readNamespacedPod(podName, namespace);

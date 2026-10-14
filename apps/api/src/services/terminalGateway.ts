@@ -109,7 +109,8 @@ function connectKubectlExecStream(ws: WebSocket, session: any): Promise<boolean>
     const lab = db.getLabById(session.labId);
     const isDockerLab = session.labSlug?.includes('docker') || session.labId?.includes('docker');
     const isContainerdLab = session.labSlug?.includes('containerd') || session.labId?.includes('containerd');
-    const isShLab = isDockerLab || isContainerdLab || lab?.startupCommand === '/bin/sh';
+    const isK8sLab = session.labSlug?.includes('kubernetes') || session.labSlug?.includes('k3s') || session.labSlug?.includes('kind') || session.labId?.includes('kubernetes');
+    const isShLab = isDockerLab || isContainerdLab || isK8sLab || lab?.startupCommand === '/bin/sh';
     const targetShell = isShLab ? '/bin/sh' : '/bin/bash';
 
     const proc = spawn('kubectl', ['--context', contextName, 'exec', '-i', '-n', namespace, podName, '--', targetShell], {

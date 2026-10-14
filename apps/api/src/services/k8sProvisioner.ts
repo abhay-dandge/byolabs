@@ -393,8 +393,8 @@ export class LabProvisionerService {
     const isPodmanLab = lab.category === 'Podman' || lab.slug?.includes('podman') || (lab.dockerImage && lab.dockerImage.includes('podman'));
     const isBuildahLab = lab.category === 'Buildah' || lab.slug?.includes('buildah') || (lab.dockerImage && lab.dockerImage.includes('buildah'));
     const isContainerdLab = lab.category === 'Containerd' || lab.slug?.includes('containerd') || (lab.dockerImage && lab.dockerImage.includes('containerd'));
-    const isKindLab = lab.category === 'Kubernetes' || lab.slug?.includes('kind') || lab.slug?.includes('kubernetes');
-    const isHeavyRuntime = isSidecarDind || isPodmanLab || isBuildahLab || isContainerdLab || isKindLab;
+    const isK8sLab = lab.category === 'Kubernetes' || lab.slug?.includes('kind') || lab.slug?.includes('kubernetes') || lab.slug?.includes('k3s');
+    const isHeavyRuntime = isSidecarDind || isPodmanLab || isBuildahLab || isContainerdLab || isK8sLab;
 
     // 2. Create ResourceQuota in namespace
     const quotaSpec: k8s.V1ResourceQuota = {
@@ -641,47 +641,55 @@ export class LabProvisionerService {
           restartPolicy: 'Never',
         },
       };
-    } else if (isKindLab) {
-      const kindScript = [
-        'apk add --no-cache bash curl wget jq >/dev/null 2>&1',
-        'dockerd > /var/log/dockerd.log 2>&1 &',
-        'while ! docker info >/dev/null 2>&1; do sleep 1; done',
-        'if [ ! -f /usr/local/bin/kind ]; then wget -qO /usr/local/bin/kind https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64 && chmod +x /usr/local/bin/kind; fi',
-        'if [ ! -f /usr/local/bin/kubectl ]; then wget -qO /usr/local/bin/kubectl https://dl.k8s.io/release/v1.31.0/bin/linux/amd64/kubectl && chmod +x /usr/local/bin/kubectl; fi',
-        'mkdir -p /root/.kube',
-        'echo "export KUBECONFIG=/root/.kube/config" >> /root/.bashrc',
-        'echo "export KUBECONFIG=/root/.kube/config" >> /root/.profile',
-        'echo "export KUBECONFIG=/root/.kube/config" >> /etc/profile',
-        'echo "alias k=kubectl" >> /root/.bashrc',
+    } else if (isK8sLab) {
+      const k3sScript = [
+        '#!/bin/sh',
+        'set -e',
+        '[ ! -f /bin/bash ] && ln -sf /bin/sh /bin/bash',
+        'mkdir -p /root/.kube /etc/profile.d /etc/rancher/k3s',
+        'ln -sf /etc/rancher/k3s/k3s.yaml /root/.kube/config',
+        'cat << "EOF" > /etc/profile.d/k3s.sh',
+        'export KUBECONFIG=/etc/rancher/k3s/k3s.yaml',
+        'alias k=kubectl',
+        'EOF',
+        'chmod +x /etc/profile.d/k3s.sh',
+        'echo "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml" >> /root/.profile',
+        'echo "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml" >> /root/.bashrc',
         'echo "alias k=kubectl" >> /root/.profile',
-        'echo "alias k=kubectl" >> /etc/profile',
-        'cat << "BANNER" >> /root/.bashrc',
-        'if [ ! -f /var/run/kind-ready ]; then',
-        '  echo -e "\\n\\033[1;33m⏳ Bootstrapping your dedicated Kubernetes (KinD) cluster (~30s)...\\033[0m"',
-        '  while [ ! -f /var/run/kind-ready ]; do',
-        '    echo -ne "\\033[0;36m• Starting control-plane & kubelet... \\033[0m\\r"',
-        '    sleep 2',
+        'echo "alias k=kubectl" >> /root/.bashrc',
+        'cat << "BANNER" >> /root/.profile',
+        'if [ ! -f /var/run/k3s-ready ]; then',
+        '  echo -e "\\n\\033[1;33m⏳ Bootstrapping lightweight Kubernetes (K3s v1.31) cluster (~10s)...\\033[0m"',
+        '  while [ ! -f /var/run/k3s-ready ]; do',
+        '    echo -ne "\\033[0;36m• Initializing control-plane & containerd... \\033[0m\\r"',
+        '    sleep 1',
         '  done',
         '  echo -e "\\n\\033[1;32m✔ Kubernetes cluster is READY! Type \\"kubectl get nodes\\" to begin.\\033[0m\\n"',
         'else',
-        '  echo -e "\\n\\033[1;32m✔ Dedicated Kubernetes (KinD v1.31) Cluster is READY!\\033[0m"',
+        '  echo -e "\\n\\033[1;32m✔ Dedicated Kubernetes (K3s v1.31) Cluster is READY!\\033[0m"',
         '  echo -e "\\033[0;36m💡 Try: kubectl get nodes | kubectl get pods -A | alias k=kubectl\\033[0m\\n"',
         'fi',
         'BANNER',
-        'cat /root/.bashrc >> /root/.profile',
-        'kind create cluster --kubeconfig /root/.kube/config --wait 90s > /var/log/kind-init.log 2>&1',
-        'chmod 644 /root/.kube/config',
+        'cp -f /root/.profile /root/.bashrc',
+        'k3s server --disable traefik --disable servicelb --disable metrics-server --write-kubeconfig-mode 644 --snapshotter native > /var/log/k3s.log 2>&1 &',
+        'while [ ! -f /etc/rancher/k3s/k3s.yaml ]; do sleep 1; done',
+        'while ! k3s kubectl get nodes >/dev/null 2>&1; do sleep 1; done',
+        'touch /var/run/k3s-ready',
         'touch /var/run/kind-ready',
-        'echo "KIND_BOOTSTRAP_COMPLETE" >> /var/log/kind-init.log',
+        'echo "K3S_BOOTSTRAP_COMPLETE" >> /var/log/k3s.log',
         'trap : TERM INT; sleep infinity & wait'
       ].join('\n');
+
+      const k3sImage = lab.dockerImage && lab.dockerImage !== 'docker:dind' && lab.dockerImage !== 'ubuntu:latest'
+        ? lab.dockerImage
+        : 'rancher/k3s:v1.31.1-k3s1';
 
       podSpec = {
         metadata: {
           name: podName,
           namespace,
           labels: {
-            app: 'kind-lab',
+            app: 'k3s-lab',
             'session-id': session.id,
             'user-id': session.userId,
             'lab-type': lab.slug,
@@ -692,11 +700,11 @@ export class LabProvisionerService {
           containers: [
             {
               name: 'lab-container',
-              image: 'docker:dind',
-              command: ['/bin/sh', '-c', kindScript],
+              image: k3sImage,
+              command: ['/bin/sh', '-c', k3sScript],
               env: [
-                { name: 'KUBECONFIG', value: '/root/.kube/config' },
-                { name: 'ENV', value: '/root/.bashrc' },
+                { name: 'KUBECONFIG', value: '/etc/rancher/k3s/k3s.yaml' },
+                { name: 'ENV', value: '/root/.profile' },
               ],
               securityContext: {
                 privileged: true,
@@ -705,8 +713,8 @@ export class LabProvisionerService {
               },
               volumeMounts: [
                 {
-                  name: 'docker-storage',
-                  mountPath: '/var/lib/docker',
+                  name: 'k3s-storage',
+                  mountPath: '/var/lib/rancher/k3s',
                 },
               ],
               stdin: true,
@@ -715,11 +723,19 @@ export class LabProvisionerService {
                 requests: { cpu: lab.cpuRequest || '250m', memory: lab.memoryRequest || '512Mi' },
                 limits: { cpu: lab.cpuLimit || '1.5', memory: lab.memoryLimit || '2Gi' },
               },
+              readinessProbe: {
+                exec: {
+                  command: ['/bin/sh', '-c', 'test -f /var/run/k3s-ready'],
+                },
+                initialDelaySeconds: 2,
+                periodSeconds: 2,
+                failureThreshold: 30,
+              },
             },
           ],
           volumes: [
             {
-              name: 'docker-storage',
+              name: 'k3s-storage',
               emptyDir: {},
             },
           ],
@@ -808,7 +824,7 @@ export class LabProvisionerService {
       console.warn('[K8sProvisioner] Service creation warning:', err?.message);
     }
 
-    // Wait for Pod Ready (poll up to 90s for image pulling)
+    // Wait for Pod Ready (poll up to 180s for image pulling and initialization)
     let isReady = false;
     let lastPhase = 'Unknown';
     for (let i = 0; i < 180; i++) {
@@ -818,8 +834,16 @@ export class LabProvisionerService {
         const phase = podRes.body?.status?.phase;
         lastPhase = phase || 'Unknown';
         if (phase === 'Running' || phase === 'Succeeded') {
-          isReady = true;
-          break;
+          if (isK8sLab) {
+            const containerReady = podRes.body?.status?.containerStatuses?.every((c) => c.ready);
+            if (containerReady || i >= 40) {
+              isReady = true;
+              break;
+            }
+          } else {
+            isReady = true;
+            break;
+          }
         }
       } catch (e) {
         // Ignore transient K8s API read errors while pod initializes

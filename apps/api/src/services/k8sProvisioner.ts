@@ -673,7 +673,7 @@ export class LabProvisionerService {
         'cp -f /root/.profile /root/.bashrc',
         'k3s server --disable traefik --disable servicelb --disable metrics-server --write-kubeconfig-mode 644 --snapshotter native > /var/log/k3s.log 2>&1 &',
         'while [ ! -f /etc/rancher/k3s/k3s.yaml ]; do sleep 1; done',
-        'while ! k3s kubectl get nodes >/dev/null 2>&1; do sleep 1; done',
+        'while ! kubectl get nodes >/dev/null 2>&1; do sleep 1; done',
         'touch /var/run/k3s-ready',
         'touch /var/run/kind-ready',
         'echo "K3S_BOOTSTRAP_COMPLETE" >> /var/log/k3s.log',

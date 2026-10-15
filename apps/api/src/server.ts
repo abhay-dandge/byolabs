@@ -1,7 +1,7 @@
+import 'dotenv/config';
 import express from 'express';
 import http from 'http';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import authRoutes from './routes/auth.js';
 import labRoutes from './routes/labs.js';
 import adminRoutes from './routes/admin.js';
@@ -11,8 +11,6 @@ import { setupTerminalGateway } from './services/terminalGateway.js';
 import { startCleanupWorker } from './services/cleanupWorker.js';
 import { seedDatabase } from './db/seed.js';
 import { k8sProvisioner } from './services/k8sProvisioner.js';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;

@@ -10,9 +10,10 @@ import { User, AuthResponse } from '@byolabs/shared';
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'byolabs_super_secret_jwt_key_2026_change_in_production';
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
-const oauth2Client = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET);
+const DEFAULT_GOOGLE_CLIENT_ID = '145989035319-kermjuheku4se52tnjd555ffhcr6ic0m.apps.googleusercontent.com';
+const getGoogleClientId = () => process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || DEFAULT_GOOGLE_CLIENT_ID;
+const getGoogleClientSecret = () => process.env.GOOGLE_CLIENT_SECRET || '';
+const getOAuth2Client = () => new OAuth2Client(getGoogleClientId(), getGoogleClientSecret());
 
 
 // POST /api/v1/auth/register
@@ -231,9 +232,10 @@ router.post('/reset-password', async (req: Request, res: Response) => {
 
 // GET /api/v1/auth/google/config
 router.get('/google/config', (req: Request, res: Response) => {
+  const cid = getGoogleClientId();
   return res.json({
-    clientId: GOOGLE_CLIENT_ID,
-    enabled: Boolean(GOOGLE_CLIENT_ID),
+    clientId: cid,
+    enabled: Boolean(cid),
   });
 });
 
@@ -250,12 +252,15 @@ router.post('/google', async (req: Request, res: Response) => {
     let name: string | undefined;
     let picture: string | undefined;
 
+    const client = getOAuth2Client();
+    const activeClientId = getGoogleClientId();
+
     if (credential) {
       // 1. Verify Google ID Token (from Google Identity Services credential response)
       try {
-        const ticket = await oauth2Client.verifyIdToken({
+        const ticket = await client.verifyIdToken({
           idToken: credential,
-          audience: GOOGLE_CLIENT_ID,
+          audience: activeClientId || undefined,
         });
         const payload = ticket.getPayload();
         if (payload) {
@@ -269,7 +274,7 @@ router.post('/google', async (req: Request, res: Response) => {
           const resp = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`);
           if (resp.ok) {
             const info = (await resp.json()) as any;
-            if (info.aud === GOOGLE_CLIENT_ID || info.azp === GOOGLE_CLIENT_ID) {
+            if (!activeClientId || info.aud === activeClientId || info.azp === activeClientId) {
               email = info.email;
               name = info.name;
               picture = info.picture;
@@ -282,14 +287,14 @@ router.post('/google', async (req: Request, res: Response) => {
     } else if (code) {
       // 2. Exchange OAuth2 authorization code
       try {
-        const { tokens } = await oauth2Client.getToken({
+        const { tokens } = await client.getToken({
           code,
           redirect_uri: redirectUri || 'postmessage',
         });
         if (tokens.id_token) {
-          const ticket = await oauth2Client.verifyIdToken({
+          const ticket = await client.verifyIdToken({
             idToken: tokens.id_token,
-            audience: GOOGLE_CLIENT_ID,
+            audience: activeClientId || undefined,
           });
           const payload = ticket.getPayload();
           if (payload) {

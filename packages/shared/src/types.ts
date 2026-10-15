@@ -9,6 +9,8 @@ export interface User {
   role: UserRole;
   status: UserStatus;
   monthlyQuotaHours?: number;
+  avatar?: string;
+  authProvider?: 'local' | 'google';
   createdAt: string;
   updatedAt: string;
 }

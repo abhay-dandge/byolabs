@@ -53,6 +53,13 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+  googleLogin: (data: { credential?: string; code?: string; redirectUri?: string; demoEmail?: string }) =>
+    request<{ user: User; token: string; status?: string; message?: string }>('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  getGoogleConfig: () =>
+    request<{ clientId: string; enabled: boolean }>('/auth/google/config'),
 
   // Labs
   getLabs: () => request<{ labs: Lab[] }>('/labs'),

@@ -418,16 +418,12 @@ export class LabProvisionerService {
     const isDind = (lab.dockerImage && lab.dockerImage.includes('dind')) || (lab.slug && lab.slug.includes('dind'));
 
     let containerCommand: string[] | undefined;
-    if (lab.startupCommand && lab.startupCommand !== '/bin/sh' && lab.startupCommand !== '/bin/bash') {
-      containerCommand = ['/bin/sh', '-c', lab.startupCommand];
-    } else if (isDind) {
+    if (isDind) {
       containerCommand = undefined;
-    } else if (lab.startupCommand === '/bin/bash') {
-      containerCommand = ['/bin/bash'];
-    } else if (lab.startupCommand === '/bin/sh') {
-      containerCommand = ['/bin/sh'];
+    } else if (lab.startupCommand && lab.startupCommand !== '/bin/sh' && lab.startupCommand !== '/bin/bash') {
+      containerCommand = ['/bin/sh', '-c', `${lab.startupCommand}; trap : TERM INT; sleep infinity & wait`];
     } else {
-      containerCommand = ['/bin/bash'];
+      containerCommand = ['/bin/sh', '-c', 'trap : TERM INT; sleep infinity & wait'];
     }
 
     const isPrivilegedLab = isDind || isHeavyRuntime;
@@ -758,7 +754,9 @@ export class LabProvisionerService {
           containers: [
             {
               name: 'lab-container',
-              image: lab.dockerImage || 'ubuntu:latest',
+              image: (lab.category === 'Git' || lab.slug?.includes('git')) && (!lab.dockerImage || lab.dockerImage === 'ubuntu:latest')
+                ? 'bitnami/git:latest'
+                : (lab.dockerImage || 'ubuntu:latest'),
               ...(containerCommand ? { command: containerCommand } : {}),
               ports: [
                 {
@@ -833,7 +831,7 @@ export class LabProvisionerService {
         const podRes = await coreV1Api.readNamespacedPod(podName, namespace);
         const phase = podRes.body?.status?.phase;
         lastPhase = phase || 'Unknown';
-        if (phase === 'Running' || phase === 'Succeeded') {
+        if (phase === 'Running') {
           if (isK8sLab) {
             const containerReady = podRes.body?.status?.containerStatuses?.every((c) => c.ready);
             if (containerReady || i >= 40) {
@@ -841,8 +839,11 @@ export class LabProvisionerService {
               break;
             }
           } else {
-            isReady = true;
-            break;
+            const containerRunning = podRes.body?.status?.containerStatuses?.some((c) => c.state?.running || c.ready);
+            if (containerRunning || i >= 5) {
+              isReady = true;
+              break;
+            }
           }
         }
       } catch (e) {

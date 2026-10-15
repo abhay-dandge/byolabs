@@ -2,21 +2,33 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
-import { Terminal, Lock, Mail, AlertCircle, ArrowRight } from 'lucide-react';
+import { Terminal, Lock, Mail, AlertCircle, ArrowRight, Clock } from 'lucide-react';
 import byolabsLogo from '../assets/byolabs-logo.png';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
 
 export const LoginPage: React.FC = () => {
   const [emailOrUsername, setEmailOrUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [pendingNotice, setPendingNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  const handleOAuthSuccess = (data: { user: any; token: string }) => {
+    login(data);
+    if (data.user.role === 'ADMIN') {
+      navigate('/admin');
+    } else {
+      navigate('/dashboard');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setPendingNotice(null);
     setLoading(true);
 
     try {
@@ -36,7 +48,7 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-slate-900/80 p-8 rounded-2xl border border-slate-800 shadow-2xl glass-panel">
+      <div className="max-w-md w-full space-y-7 bg-slate-900/80 p-8 rounded-2xl border border-slate-800 shadow-2xl glass-panel">
         <div className="text-center">
           <div className="bg-white/95 px-3 py-2 rounded-xl inline-block mx-auto mb-4 shadow-lg shadow-cyan-500/10">
             <img src={byolabsLogo} alt="BYOLabs.in" className="h-9 object-contain" />
@@ -52,7 +64,41 @@ export const LoginPage: React.FC = () => {
           </div>
         )}
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        {pendingNotice && (
+          <div className="p-4 rounded-xl bg-amber-950/80 border border-amber-800/60 text-amber-300 text-sm flex items-start space-x-3">
+            <Clock className="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-400" />
+            <div>
+              <p className="font-bold text-amber-200">Account Pending Approval</p>
+              <p className="text-xs text-amber-300/90 mt-1">{pendingNotice}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Google OAuth Sign-In Option */}
+        <div className="space-y-4 pt-1">
+          <GoogleSignInButton
+            mode="signin"
+            onSuccess={handleOAuthSuccess}
+            onError={(msg) => {
+              setPendingNotice(null);
+              setError(msg);
+            }}
+            onPending={(msg) => {
+              setError(null);
+              setPendingNotice(msg);
+            }}
+          />
+
+          <div className="relative flex items-center justify-center py-2">
+            <div className="w-full border-t border-slate-800/80"></div>
+            <span className="bg-slate-900 px-3 text-[11px] text-slate-500 uppercase tracking-wider font-medium absolute">
+              Or sign in with credentials
+            </span>
+          </div>
+        </div>
+
+        {/* Existing Credential Login Form */}
+        <form className="space-y-5" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Email or Username</label>
